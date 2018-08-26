@@ -14,6 +14,7 @@ module.exports = context => {
   const { USERNAME } = context;
   
   const db = [
+    "objects",
     "outbox",
     "inbox",
     "followers",
