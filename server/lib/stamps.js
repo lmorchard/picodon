@@ -2,7 +2,7 @@
 TODO:
 - signatures?
 */
-const uuidv1 = require('uuid/v1');
+const uuidv1 = require("uuid/v1");
 
 const ID_PUBLIC = "https://www.w3.org/ns/activitystreams#Public";
 const CONTEXT_ACTIVITY_STREAMS = "https://www.w3.org/ns/activitystreams";
