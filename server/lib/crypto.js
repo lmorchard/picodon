@@ -1,5 +1,4 @@
 const crypto = require("crypto");
-const fetch = require("node-fetch");
 const { asc, fetchJson } = require("./utils");
 
 const signRequest = ({

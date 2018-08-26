@@ -5,7 +5,7 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 
 const server = require("./server");
-const config = require("./server/config");  
+const config = require("./server/config");
 
 const {
   PORT = 8000,
@@ -14,7 +14,7 @@ const {
 } = process.env;
 
 const HOST = process.env.HOST || `${PROJECT_DOMAIN}.glitch.me`;
-            
+
 const setupApp = app => server(config({ app, env: process.env }));
 
 module.exports = {
@@ -86,7 +86,7 @@ module.exports = {
             }
           }
         ]
-      }      
+      }
     ]
   }
 };

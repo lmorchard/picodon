@@ -1,9 +1,5 @@
 const { combineReducers } = require("redux");
-const {
-  createActions,
-  handleActions,
-  combineActions
-} = require("redux-actions");
+const { createActions, handleActions/* , combineActions */ } = require("redux-actions");
 
 const actions = createActions(
   {
@@ -12,11 +8,11 @@ const actions = createActions(
 );
 
 const selectors = {
-  
+
 };
 
 const rootReducer = combineReducers({
-  play: handleActions (
+  play: handleActions(
     {
       [actions.setPlay]: (state, { payload }) => ({ ...state, play: payload })
     },

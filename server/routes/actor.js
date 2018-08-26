@@ -1,18 +1,16 @@
 const express = require("express");
 const { LocalActor } = require("../lib/stamps");
-const { verifyRequest, getPublicKey } = require("../lib/crypto");
+const { verifyRequest } = require("../lib/crypto");
 const { asyncHandler } = require("../middleware");
 
 module.exports = context => {
   const {
     app,
     USERNAME,
-    SITE_DOMAIN,
     ACTOR_PATH,
     ACTOR_URL,
     ACTOR_KEY_URL,
-    PUBLIC_KEY,
-    PRIVATE_KEY
+    PUBLIC_KEY
   } = context;
 
   const actorRouter = express.Router();
@@ -40,8 +38,8 @@ module.exports = context => {
         // TODO: log these messages for later review? lots of Deleted actions for users
         return response.status(401).send("HTTP signature not verified");
       }
-      console.log("ACTOR INBOX POST", { headers, body });
-      response.status(202).json({});
+      console.log("ACTOR INBOX POST", { headers, body }); // eslint-disable-line no-console
+      return response.status(202).json({});
     })
   );
 

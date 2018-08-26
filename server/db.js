@@ -1,6 +1,3 @@
-const express = require("express");
-const morgan = require("morgan");
-const bodyParser = require("body-parser");
 const nedb = require("nedb-promises");
 
 const dbCreate = name =>
@@ -12,7 +9,7 @@ const dbCreate = name =>
 
 module.exports = context => {
   const { USERNAME } = context;
-  
+
   const db = [
     "objects",
     "outbox",
@@ -26,6 +23,6 @@ module.exports = context => {
     ({ ...acc, [name]: dbCreate(`${USERNAME}/${name}`) }),
     {}
   );
-  
+
   return { ...context, db };
-}
+};

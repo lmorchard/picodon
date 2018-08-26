@@ -1,16 +1,11 @@
 const fetch = require("node-fetch");
 const url = require("url");
 
-const { signRequest, verifyRequest } = require("../server/lib/crypto");
+const { signRequest } = require("../server/lib/crypto");
 
 const {
-  USERNAME,
-  PROJECT_DOMAIN,
-  PUBLIC_KEY,
   PRIVATE_KEY,
-  SITE_DOMAIN,
   SITE_URL,
-  ACTOR_PATH,
   ACTOR_URL,
   ACTOR_KEY_URL
 } = require("../server/config")({ env: process.env });
@@ -59,5 +54,7 @@ fetch(`${protocol}//${host}${path}`, {
   headers: { ...headers, "Signature": signature }
 })
   .then(res => Promise.all([res.status, res.statusText, res.headers.raw(), res.text()]))
+  // eslint-disable-next-line no-console
   .then(([status, statusText, headers, text]) => console.log({ status, statusText, text }))
+  // eslint-disable-next-line no-console
   .catch(error => console.log({ error }));

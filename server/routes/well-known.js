@@ -19,7 +19,7 @@ module.exports = context => {
         ]
       });
     }
-    response.status(404).send("NOT FOUND");
+    return response.status(404).send("NOT FOUND");
   });
 
   app.use("/.well-known", wellKnownRouter);

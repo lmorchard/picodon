@@ -172,6 +172,7 @@ module.exports = {
   ObjectNote,
   ObjectFollow,
   ObjectTombstone,
+  Collection,
   OrderedCollection
 };
 
@@ -236,7 +237,7 @@ module.exports = {
       "en": "<p><span class=\"h-card\"><a href=\"https://sunset-screen.glitch.me/@botbot\" class=\"u-url mention\">@<span>botbot</span></a></span> test please ignore again</p>"
     },
     "attachment": [
-      
+
     ],
     "tag": [
       {
