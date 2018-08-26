@@ -21,11 +21,13 @@ parserOptions:
 root: true
 
 rules:
-  no-console: "warn"
+  # no-console: "warn"
+  no-console: off
   arrow-parens: off
   comma-dangle: off
   function-paren-newline: off
   guard-for-in: off
+  no-trailing-spaces: off
   import/no-named-as-default: off
   import/prefer-default-export: off
   linebreak-style: off
@@ -35,6 +37,7 @@ rules:
   no-use-before-define: off
   object-curly-newline: off
   react/prop-types: off
+  eol-last: off
 
 overrides:
   -

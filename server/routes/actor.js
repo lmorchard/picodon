@@ -33,12 +33,12 @@ module.exports = context => {
   actorRouter.route("/inbox").post(
     asyncHandler(async (request, response) => {
       const { method, originalUrl: path, headers, body } = request;
+      console.log("ACTOR INBOX POST", { headers, body }); // eslint-disable-line no-console
       const requestVerified = await verifyRequest({ method, path, headers });
       if (!requestVerified) {
         // TODO: log these messages for later review? lots of Deleted actions for users
         return response.status(401).send("HTTP signature not verified");
       }
-      console.log("ACTOR INBOX POST", { headers, body }); // eslint-disable-line no-console
       return response.status(202).json({});
     })
   );

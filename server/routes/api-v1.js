@@ -1,7 +1,7 @@
 const express = require("express");
 
 module.exports = context => {
-  const { app, /* USERNAME, SITE_DOMAIN, ACTOR_URL */ } = context;
+  const { app /* USERNAME, SITE_DOMAIN, ACTOR_URL */ } = context;
 
   const apiRouter = express.Router();
 
