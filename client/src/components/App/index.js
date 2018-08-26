@@ -1,14 +1,14 @@
 import React from "react";
-import classnames from "classnames";
 import { connect } from "react-redux";
 import { hot } from "react-hot-loader";
+// import classnames from "classnames";
 import { /* actions, */ selectors } from "../../store";
 
 import "./index.css";
 
 export const AppComponent = props => (
   <div>
-    <h1>Hello from this app</h1>
+    <h1>Hello from this app wheee</h1>
   </div>
 );
 

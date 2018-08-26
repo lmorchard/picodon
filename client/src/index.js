@@ -1,10 +1,10 @@
 import React from "react";
 import { render } from "react-dom";
-import { applyMiddleware, createStore, combineReducers } from "redux";
+import { applyMiddleware, createStore/* , combineReducers */ } from "redux";
 import { Provider } from "react-redux";
 import promiseMiddleware from "redux-promise";
 import { composeWithDevTools } from "redux-devtools-extension";
-import { selectors, rootReducer, actions } from "./store";
+import { rootReducer, /* selectors, actions */ } from "./store";
 
 import "./index.css";
 import App from "./components/App";

@@ -8,7 +8,6 @@ const { app, PORT, HOST } = server(config({
 }));
 
 app.use(express.static("client/build"));
-
-const listener = app.listen(PORT, () => {
-  console.log(`Your wonderful server app is listening on ${HOST}:${PORT}`);
-});
+app.listen(PORT, () =>
+   // eslint-disable-next-line no-console
+  console.log(`Your wonderful server app is listening on ${HOST}:${PORT}`));
