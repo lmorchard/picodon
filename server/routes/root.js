@@ -10,7 +10,10 @@ module.exports = context => {
   rootRouter.route("/inbox").post(
     asyncHandler(async (request, response) => {
       // eslint-disable-next-line no-console
-      console.log("INBOX POST", { headers: request.headers, body: request.body });
+      console.log("INBOX POST", {
+        headers: request.headers,
+        body: request.body
+      });
       response.status(202).json({});
     })
   );

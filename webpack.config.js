@@ -27,8 +27,8 @@ module.exports = {
     filename: "[name].js"
   },
   watchOptions: {
-    aggregateTimeout: 300,
-    poll: 1000
+    aggregateTimeout: 500,
+    poll: 500
   },
   devServer: {
     disableHostCheck: true,

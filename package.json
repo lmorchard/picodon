@@ -1,21 +1,21 @@
 {
-  "name": "hello-express",
+  "name": "picodon",
   "version": "0.0.1",
   "description": "A simple Node app built on Express, instantly up and running.",
   "private": true,
   "main": "index.js",
   "scripts": {
     "start": "NODE_ENV=development npm-run-all --parallel server:dev watch",
-    "server:dev": "nodemon --delay 2500 --ignore './client/*' --exec webpack-dev-server --hot --watch --no-color",
+    "server:dev": "webpack-dev-server --hot --watch --no-color",
     "server": "node index.js",
     "build": "webpack",
     "format": "prettier --write ./server/**/*.js ./client/src/**/*.js",
     "lint": "npm-run-all lint:*",
-    "lint:js": "eslint --color .",
-    "lint:js:fix": "eslint --color --fix .",
+    "lint:js": "eslint .",
+    "lint:js:fix": "eslint --fix .",
     "watch": "npm-run-all --parallel watch:*",
     "watch:lint": "npm-run-all --parallel watch:lint:*",
-    "watch:lint:js": "onchange -p -v \"server/**/*.js\" \"client/src/**/*.js\" -- npm run lint:js"
+    "watch:lint:js": "onchange --await-write-finish -d 1000 -p -v \"server/**/*.js\" \"client/src/**/*.js\" -- npm run lint:js"
   },
   "engines": {
     "node": "8.x"
@@ -31,8 +31,13 @@
   ],
   "dependencies": {
     "classnames": "^2.2.6",
+    "cookie-parser": "^1.4.3",
+    "cookie-session": "^2.0.0-beta.3",
+    "express-session": "^1.15.6",
     "nedb": "^1.8.0",
     "nedb-promises": "^3.0.1",
+    "passport": "^0.4.0",
+    "passport-local": "^1.0.0",
     "react": "^16.4.2",
     "react-dom": "^16.4.2",
     "react-hot-loader": "^4.3.5",

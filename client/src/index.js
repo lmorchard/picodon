@@ -4,7 +4,7 @@ import { applyMiddleware, createStore/* , combineReducers */ } from "redux";
 import { Provider } from "react-redux";
 import promiseMiddleware from "redux-promise";
 import { composeWithDevTools } from "redux-devtools-extension";
-import { rootReducer, /* selectors, actions */ } from "./store";
+import { rootReducer, actions } from "./store";
 
 import "./index.css";
 import App from "./components/App";
@@ -17,6 +17,7 @@ function init() {
   document.body.appendChild(root);
 
   store = setupStore();
+  checkAuth();
   renderApp();
 }
 
@@ -34,6 +35,17 @@ function setupStore() {
       )
     )
   );
+}
+
+function checkAuth() {
+  fetch("/auth", { headers: { "Accept": "application/json" } })
+    .then(res => Promise.all([ res.status, res.json() ]))
+    .then(([ status, data ]) => {
+      if (200 == status && data && data.user) {
+        store.dispatch(actions.setUser(data.user));
+      }
+    })
+    .catch(err => console.log("AUTH FAILURE", err));
 }
 
 function renderApp() {

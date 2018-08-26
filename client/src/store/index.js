@@ -1,27 +1,48 @@
 const { combineReducers } = require("redux");
-const { createActions, handleActions/* , combineActions */ } = require("redux-actions");
+const {
+  createActions,
+  handleActions /* , combineActions */
+} = require("redux-actions");
 
-const actions = createActions(
-  {
-  },
-  "setPlay"
-);
+const actions = createActions({}, "setUser", "clearUser");
 
 const selectors = {
-
+  isLoggedIn: state => !!state.auth.user,
+  authUser: state => state.auth.user
 };
 
 const rootReducer = combineReducers({
-  play: handleActions(
+  auth: handleActions(
     {
-      [actions.setPlay]: (state, { payload }) => ({ ...state, play: payload })
+      [actions.setUser]: (state, { payload: user }) => ({ ...state, user }),
+      [actions.clearUser]: state => ({ ...state, user: null })
     },
-    { play: true }
+    { user: null }
   )
 });
+
+const mapActionsToDispatchProps = dispatch =>
+  Object.entries(actions).reduce(
+    (acc, [name, action]) => ({
+      ...acc,
+      [name]: (...args) => dispatch(action(...args))
+    }),
+    {}
+  );
+
+const mapSelectorsToStateProps = state =>
+  Object.entries(selectors).reduce(
+    (acc, [name, selector]) => ({
+      ...acc,
+      [name]: () => selector(state)
+    }),
+    {}
+  );
 
 module.exports = {
   actions,
   selectors,
-  rootReducer
+  rootReducer,
+  mapActionsToDispatchProps,
+  mapSelectorsToStateProps
 };

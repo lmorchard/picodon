@@ -3,9 +3,11 @@ module.exports = ({ app, env }) => {
     HOST,
     PORT,
     USERNAME,
+    PASSWORD,
     PROJECT_DOMAIN,
     PUBLIC_KEY,
-    PRIVATE_KEY
+    PRIVATE_KEY,
+    SERVER_SECRET
   } = env;
 
   const SITE_DOMAIN = `${PROJECT_DOMAIN}.glitch.me`;
@@ -19,9 +21,11 @@ module.exports = ({ app, env }) => {
     HOST: HOST || SITE_DOMAIN,
     PORT,
     USERNAME,
+    PASSWORD,
     PROJECT_DOMAIN,
     PUBLIC_KEY,
     PRIVATE_KEY,
+    SERVER_SECRET,
     SITE_DOMAIN,
     SITE_URL,
     ACTOR_PATH,
