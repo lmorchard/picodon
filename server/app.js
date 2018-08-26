@@ -2,7 +2,6 @@ const morgan = require("morgan");
 const bodyParser = require("body-parser");
 const cookieSession = require("cookie-session");
 const cookieParser = require("cookie-parser");
-const flash = require("connect-flash");
 
 module.exports = config => {
   const { app, SERVER_SECRET } = config;
@@ -23,10 +22,6 @@ module.exports = config => {
   app.use(bodyParser.text({
     type: "*/*"
   }));
-  app.use(flash());
-  
-  app.get("/.flash",
-    (req, res) => res.json({ messages: req.flash() }));
   
   return { ...config };
 };
