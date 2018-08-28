@@ -6,7 +6,7 @@ import promiseMiddleware from "redux-promise";
 import { composeWithDevTools } from "redux-devtools-extension";
 import { rootReducer, actions } from "./store";
 
-import "./index.css";
+import "./index.less";
 import App from "./components/App";
 
 let store;

@@ -6,15 +6,76 @@ import {
   mapActionsToDispatchProps,
   mapSelectorsToStateProps
 } from "../../store";
+import { ID_PUBLIC, DateNow, ObjectNote } from "../../../../lib/stamps";
 
-import "./index.css";
+import "./index.less";
 
 export const AppComponent = (props) => (
   <div>
-    <h1>Hello from Picodon, how are you?</h1>
     <AuthState {...props} />
+    <h1>Hello from Picodon!</h1>
+    {props.isLoggedIn() && (
+      <div>
+        <TooterBox {...props} />
+      </div>
+    )}
   </div>
 );
+
+class TooterBox extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      content: ""
+    };
+  }
+  
+  render() {
+    return (
+      <form onSubmit={this.handleSubmit}>
+        <textarea name="content" 
+          value={this.state.content}
+          onChange={this.handleContentChange}></textarea>
+        <input type="submit" value="Toot!" />
+      </form>
+    );
+  }
+
+  handleContentChange = ev => {
+    this.setState({ content: ev.target.value });
+  };
+  
+  handleSubmit = ev => {
+    ev.preventDefault();
+    
+    const actor = this.props.authUser().actor;
+
+    const content = this.state.content;
+    this.setState({ content: "" });
+    
+    const object = ObjectNote({
+      to: [ ID_PUBLIC ],
+      published: DateNow(),
+      attributedTo: actor.id,
+      content
+    });
+    
+    const outboxUrl = actor.outbox;
+    
+    fetch(outboxUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ object })
+    })
+    .then(res => Promise.all([ res.status, res.json() ]))
+    .then(([ status, data ]) => {
+      console.log("TOOT SUBMITTED!", status);
+    })
+    .catch(err => {
+      console.log("TOOT FAILURE!");
+    });
+  }
+}
 
 class AuthState extends React.Component {
   constructor(props) {
@@ -48,21 +109,6 @@ class AuthState extends React.Component {
       )
     );
   }
-
-  handleLogout = ev => {
-    const { clearUser } = this.props;
-    
-    fetch("/auth/logout", { method: "POST" })
-      .then(res => Promise.all([ res.status, res.json() ]))
-      .then(([ status, data ]) => {
-        if (200 == status) {
-          clearUser();
-        }
-      })
-      .catch(err => {
-        console.log("LOGOUT FAILURE", err);
-      });
-  }
   
   handleLogin = ev => {
     const { setUser, clearUser } = this.props;
@@ -95,6 +141,21 @@ class AuthState extends React.Component {
 
     ev.preventDefault();
   };
+
+  handleLogout = ev => {
+    const { clearUser } = this.props;
+    
+    fetch("/auth/logout", { method: "POST" })
+      .then(res => Promise.all([ res.status, res.json() ]))
+      .then(([ status, data ]) => {
+        if (200 == status) {
+          clearUser();
+        }
+      })
+      .catch(err => {
+        console.log("LOGOUT FAILURE", err);
+      });
+  }
 }
 
 export default hot(module)(connect(

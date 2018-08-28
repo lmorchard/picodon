@@ -31,7 +31,7 @@ module.exports = context => {
           "acct": "nolan",
           "display_name": "Nolan",
           "locked": false,
-          "bot": false,
+          "b------ot": false,
           "created_at": "2017-04-04T07:09:01.624Z",
           "note": "<p>\ud83c\udfba.\u2615 admin, Mastodon contributor, web guy at Microsoft.<br \/>Dev of <a href=\"https:\/\/pinafore.social\" rel=\"nofollow noopener\" target=\"_blank\"><span class=\"invisible\">https:\/\/<\/span><span class=\"\">pinafore.social<\/span><span class=\"invisible\"><\/span><\/a><br \/>Blog: <a href=\"https:\/\/nolanlawson.com\" rel=\"nofollow noopener\" target=\"_blank\"><span class=\"invisible\">https:\/\/<\/span><span class=\"\">nolanlawson.com<\/span><span class=\"invisible\"><\/span><\/a><br \/>Header: <a href=\"https:\/\/flic.kr\/p\/owsn7U\" rel=\"nofollow noopener\" target=\"_blank\"><span class=\"invisible\">https:\/\/<\/span><span class=\"\">flic.kr\/p\/owsn7U<\/span><span class=\"invisible\"><\/span><\/a><br \/>He\/him<\/p>",
           "url": "https:\/\/toot.cafe\/@nolan",
