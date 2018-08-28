@@ -1,11 +1,14 @@
+const express = require("express");
 const morgan = require("morgan");
 const bodyParser = require("body-parser");
 const cookieSession = require("cookie-session");
 const cookieParser = require("cookie-parser");
 
 module.exports = config => {
-  const { app, SERVER_SECRET } = config;
+  const { SERVER_SECRET } = config;
 
+  const app = express();
+  
   app.use(morgan("tiny"));
   app.use(cookieParser(SERVER_SECRET));
   app.use(cookieSession({
@@ -23,5 +26,5 @@ module.exports = config => {
     type: "*/*"
   }));
   
-  return { ...config };
+  return { ...config, app };
 };

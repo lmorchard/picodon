@@ -1,18 +1,18 @@
 {
   "install": {
     "include": [
-      "^package\\.json$",
-      "^\\.env$"
+      "^package\\.json$"
     ]
   },
   "restart": {
     "include": [
-      "^server/",
-      "webpack.config.js"
+      "^\\.env$",
+      "webpack\\.config\\.js"
     ],
     "exclude": [
-      "^client/"
+      "^client/",
+      "^server/"
     ]
   },
-  "throttle": 250
+  "throttle": 1000
 }

@@ -50,6 +50,7 @@ overrides:
   -
     files:
       - 'index.js'
+      - 'lib/**/*.js'
       - 'bin/**/*.js'
       - 'server/**/*.js'
     env:

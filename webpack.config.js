@@ -1,11 +1,9 @@
 const webpack = require("webpack");
 const path = require("path");
+const chokidar = require("chokidar");
 
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
-
-const server = require("./server");
-const config = require("./server/config");
 
 const {
   PORT = 8000,
@@ -15,7 +13,46 @@ const {
 
 const HOST = process.env.HOST || `${PROJECT_DOMAIN}.glitch.me`;
 
-const setupApp = app => server(config({ app, env: process.env }));
+const setupApp = app => {
+  // Use an indirect bootstrap for express app that leans on 
+  // the require() cache for every request, so that clearing
+  // the cache results in code reload.
+  app.use((req, res, next) =>
+    // TODO: Split out any resource that are expensive to
+    // initialize into more persistent references. (e.g. db)
+    require("./server")(
+      require("./server/config")({
+        env: process.env
+      })
+    )(req, res, next));
+
+  // These are paths where server-related modules live
+  const paths = [
+    "lib",
+    "server"
+  ].map(name => path.join(__dirname, name));
+  
+  // Set up a low key file watcher on the paths.
+  const watcher = chokidar.watch(paths, {
+    usePolling: true,
+    interval: 1000,
+    awaitWriteFinish: {
+      stabilityThreshold: 1000,
+      pollInterval: 500
+    }
+  });
+
+  // Whenever anything happens to any file, clear the require()
+  // cache for *all* watched paths.
+  watcher.on("ready", () => {
+    watcher.on("all", (event, path) => {
+      console.log("Clearing require() cache for server");
+      Object.keys(require.cache)
+        .filter(id => paths.filter(path => id.startsWith(path)).length > 0)
+        .forEach(id => delete require.cache[id]);
+    });
+  });
+};
 
 module.exports = {
   mode: NODE_ENV === "development" ? "development" : "production",
@@ -34,7 +71,7 @@ module.exports = {
     disableHostCheck: true,
     public: HOST,
     port: PORT,
-    before: setupApp,
+    after: setupApp,
   },
   plugins: [
     new webpack.DefinePlugin({
@@ -65,27 +102,17 @@ module.exports = {
         }
       },
       {
-        test: /\.css$/,
+        test: /\.less$/,
         use: [
           "css-hot-loader",
           MiniCssExtractPlugin.loader,
-          "css-loader"
+          "css-loader",
+          "less-loader"
         ]
       },
       {
         test: /\.(jpe?g|gif|png|svg)$/i,
-        use: [
-          {
-            loader: "file-loader",
-            options: {
-              hash: "sha512",
-              digest: "hex",
-              publicPath: "/static/app/images/",
-              outputPath: "static/app/images/",
-              name: "[name]-[hash].[ext]"
-            }
-          }
-        ]
+        use: [ "file-loader" ]
       }
     ]
   }

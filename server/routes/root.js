@@ -17,13 +17,7 @@ module.exports = context => {
       response.status(202).json({});
     })
   );
-
-  /*
-  rootRouter.route("/").get((request, response) => {
-    response.sendFile(path.resolve(__dirname + "/../views/index.html"));
-  });
-  */
-
+  
   app.use("/", rootRouter);
 
   return { ...context };

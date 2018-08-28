@@ -1,13 +1,18 @@
 const express = require("express");
 const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
+const { LocalActor } = require("../lib/stamps");
 
-module.exports = config => {
-  const { app, USERNAME, PASSWORD } = config;
+module.exports = context => {
+  const { app, USERNAME, PASSWORD } = context;
 
   const userById = id => (id !== USERNAME)
       ? null
-      : ({ id: USERNAME, displayName: USERNAME });
+      : ({
+        id: USERNAME,
+        displayName: USERNAME,
+        actor: LocalActor(context)
+      });
 
   passport.serializeUser((user, done) => done(null, user.id));
 
@@ -48,5 +53,5 @@ module.exports = config => {
   app.use(passport.session());
   app.use("/auth", authRouter);
     
-  return { ...config };
+  return { ...context };
 };
