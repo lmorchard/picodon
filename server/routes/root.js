@@ -17,7 +17,7 @@ module.exports = context => {
       response.status(202).json({});
     })
   );
-  
+
   app.use("/", rootRouter);
 
   return { ...context };

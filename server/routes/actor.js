@@ -13,32 +13,33 @@ module.exports = context => {
     ACTOR_PATH,
     ACTOR_URL
   } = context;
-  
+
   const actorRouter = express.Router();
 
   actorRouter.route("/").get((request, response) => {
-    response.json(LocalActor({
-      USERNAME,
-      ACTOR_URL,
-      ACTOR_KEY_URL,
-      PUBLIC_KEY
-    }));
+    response.json(
+      LocalActor({
+        USERNAME,
+        ACTOR_URL,
+        ACTOR_KEY_URL,
+        PUBLIC_KEY
+      })
+    );
   });
-   
-  actorRouter.route("/objects/:uuid")
-    .get(async (req, res) => {
-      const { uuid } = req.params;
-      console.log("UUID", uuid);
-      try {
-        const result = await db.objects.findOne({ 
-          _id: ObjectUrl({ baseURL: ACTOR_URL, uuid })
-        });
-        console.log("RESULT", result);
-        res.json(result.object);
-      } catch (e) {
-        res.status(404).send({ status: "NOT FOUND" });
-      }
-    });
+
+  actorRouter.route("/objects/:uuid").get(async (req, res) => {
+    const { uuid } = req.params;
+    console.log("UUID", uuid);
+    try {
+      const result = await db.objects.findOne({
+        _id: ObjectUrl({ baseURL: ACTOR_URL, uuid })
+      });
+      console.log("RESULT", result);
+      res.json(result.object);
+    } catch (e) {
+      res.status(404).send({ status: "NOT FOUND" });
+    }
+  });
 
   // https://www.w3.org/TR/activitypub/#outbox
   actorRouter
@@ -58,16 +59,17 @@ module.exports = context => {
         });
         Object.assign(object, {
           id: objectURL,
-          url: objectURL,
+          url: objectURL
         });
       }
 
       console.log("OBJECT", object);
-    
+
       await db.objects.insert({ _id: object.id, object });
-    
-      res.status(201)
-        .set({ "Location": object.url })
+
+      res
+        .status(201)
+        .set({ Location: object.url })
         .json({ status: "ok" });
     });
 

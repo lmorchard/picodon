@@ -10,7 +10,7 @@ const selectors = {
   isLoggedIn: state => !!state.auth.user,
   authUser: state => state.auth.user
 };
- 
+
 const rootReducer = combineReducers({
   auth: handleActions(
     {
