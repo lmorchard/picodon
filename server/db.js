@@ -10,17 +10,8 @@ const dbCreate = name =>
 module.exports = context => {
   const { USERNAME } = context;
 
-  const db = [
-    "objects",
-    "outbox",
-    "inbox",
-    "followers",
-    "following",
-    "liked",
-    "likes",
-    "shares"
-  ].reduce((acc, name) =>
-    ({ ...acc, [name]: dbCreate(`${USERNAME}/${name}`) }),
+  const db = ["objects"].reduce(
+    (acc, name) => ({ ...acc, [name]: dbCreate(`${USERNAME}/${name}`) }),
     {}
   );
 
