@@ -4,14 +4,38 @@ const {
   handleActions /* , combineActions */
 } = require("redux-actions");
 
-const actions = createActions({}, "setUser", "clearUser");
+const actions = createActions(
+  {},
+  "setUser",
+  "clearUser",
+  "updateInbox",
+  "updateOutbox"
+);
 
 const selectors = {
+  inboxActivities: state => state.activities.inbox,
+  outboxActivities: state => state.activities.outbox,
   isLoggedIn: state => !!state.auth.user,
   authUser: state => state.auth.user
 };
 
 const rootReducer = combineReducers({
+  activities: handleActions(
+    {
+      [actions.updateInbox]: (state, { payload: collection }) => ({
+        ...state,
+        inbox: collection.orderedItems
+      }),
+      [actions.updateOutbox]: (state, { payload: collection }) => ({
+        ...state,
+        outbox: collection.orderedItems
+      })
+    },
+    {
+      inbox: [],
+      outbox: []
+    }
+  ),
   auth: handleActions(
     {
       [actions.setUser]: (state, { payload: user }) => ({ ...state, user }),

@@ -1,9 +1,6 @@
 const fetch = require("node-fetch");
 
-// eslint-disable-next-line no-nested-ternary
-const asc = (a, b) => (a < b ? -1 : b < a ? 1 : 0);
-
-const fetchJson = url =>
+exports.fetchJson = url =>
   fetch(url, {
     headers: {
       Accept:
@@ -11,7 +8,5 @@ const fetchJson = url =>
     }
   }).then(r => r.json());
 
-module.exports = {
-  asc,
-  fetchJson
-};
+exports.requireAuthentication = (req, res, next) =>
+  req.isAuthenticated() ? next() : res.status(403).send("Forbidden");

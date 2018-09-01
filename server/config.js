@@ -1,4 +1,4 @@
-module.exports = ({ app, env }) => {
+module.exports = ({ env }) => {
   const {
     HOST,
     PORT,
@@ -17,7 +17,6 @@ module.exports = ({ app, env }) => {
   const ACTOR_KEY_URL = `${ACTOR_URL}#main-key`;
 
   return {
-    app,
     HOST: HOST || SITE_DOMAIN,
     PORT,
     USERNAME,

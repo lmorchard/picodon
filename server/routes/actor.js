@@ -1,7 +1,18 @@
 const express = require("express");
-const { LocalActor, UUID, ObjectUrl } = require("../../lib/stamps");
+const { requireAuthentication } = require("../lib/utils");
 const { verifyRequest } = require("../lib/crypto");
 const { asyncHandler } = require("../middleware");
+const {
+  ID_PUBLIC,
+  activityFindQuery,
+  isAddressedToQuery,
+  dateNow,
+  UUID,
+  LocalActor,
+  ObjectUrl,
+  OrderedCollection,
+  ActivityCreate
+} = require("../../lib/stamps");
 
 module.exports = context => {
   const {
@@ -15,6 +26,11 @@ module.exports = context => {
   } = context;
 
   const actorRouter = express.Router();
+
+  const queryPublicForUnauthed = request =>
+    request.isAuthenticated() && request.user.actor.id === ACTOR_URL
+      ? {}
+      : isAddressedToQuery(ID_PUBLIC);
 
   actorRouter.route("/").get((request, response) => {
     response.json(
@@ -44,48 +60,102 @@ module.exports = context => {
   // https://www.w3.org/TR/activitypub/#outbox
   actorRouter
     .route("/outbox")
-    .get((request, response) => {
-      response.json({ FOO: "FOOO12" });
-    })
-    .post(async (req, res) => {
-      console.log("BODY", req.body);
-      const { object } = req.body;
+    .get(
+      asyncHandler(async (request, response) => {
+        const items = await db.objects
+          .find({
+            $and: [
+              activityFindQuery,
+              { "object.actor": ACTOR_URL },
+              queryPublicForUnauthed(request)
+            ]
+          })
+          .sort({ "object.published": -1 })
+          .limit(15);
+        response.json(
+          OrderedCollection({
+            items: items.map(item => item.object)
+          })
+        );
+      })
+    )
+    .post(
+      requireAuthentication,
+      asyncHandler(async (req, res) => {
+        const { object } = req.body;
 
-      if (!object.id) {
-        const objectUUID = UUID();
-        const objectURL = ObjectUrl({
-          baseURL: ACTOR_URL,
-          uuid: objectUUID
-        });
+        const objectID = ObjectUrl({ baseURL: ACTOR_URL, uuid: UUID() });
         Object.assign(object, {
-          id: objectURL,
-          url: objectURL
+          id: objectID,
+          url: objectID
         });
-      }
 
-      console.log("OBJECT", object);
+        const createID = ObjectUrl({ baseURL: ACTOR_URL, uuid: UUID() });
+        const createActivity = ActivityCreate({
+          id: createID,
+          url: createID,
+          actor: ACTOR_URL,
+          to: [ID_PUBLIC],
+          published: dateNow(),
+          object
+        });
 
-      await db.objects.insert({ _id: object.id, object });
+        await db.objects.insert({ _id: object.id, object });
+        await db.objects.insert({
+          _id: createActivity.id,
+          object: createActivity
+        });
 
-      res
-        .status(201)
-        .set({ Location: object.url })
-        .json({ status: "ok" });
-    });
+        console.log("CREATE", createActivity);
+
+        res
+          .status(201)
+          .set({ Location: object.url })
+          .json({ status: "ok" });
+      })
+    );
 
   // https://www.w3.org/TR/activitypub/#inbox
-  actorRouter.route("/inbox").post(
-    asyncHandler(async (request, response) => {
-      const { method, originalUrl: path, headers, body } = request;
-      console.log("ACTOR INBOX POST", { headers, body }); // eslint-disable-line no-console
-      const requestVerified = await verifyRequest({ method, path, headers });
-      if (!requestVerified) {
-        // TODO: log these messages for later review? lots of Deleted actions for users
-        return response.status(401).send("HTTP signature not verified");
-      }
-      return response.status(202).json({});
-    })
-  );
+  actorRouter
+    .route("/inbox")
+    .get(
+      asyncHandler(async (request, response) => {
+        const items = await db.objects
+          .find({
+            $and: [
+              activityFindQuery,
+              isAddressedToQuery(ACTOR_URL),
+              queryPublicForUnauthed(request)
+            ]
+          })
+          .sort({ "object.published": -1 })
+          .limit(15);
+        response.json(
+          OrderedCollection({
+            items: items.map(item => item.object)
+          })
+        );
+      })
+    )
+    .post(
+      asyncHandler(async (request, response) => {
+        const { method, originalUrl: path, headers, body } = request;
+
+        const requestVerified = await verifyRequest({ method, path, headers });
+        if (!requestVerified) {
+          // TODO: log these messages for later review? lots of Deleted actions for users
+          return response.status(401).send("HTTP signature not verified");
+        }
+
+        const activity = body;
+        await db.objects.insert({ _id: activity.id, object: activity });
+
+        const object = { ...activity.object, ...activity.context };
+        await db.objects.insert({ _id: object.id, object });
+
+        return response.status(202).json({});
+      })
+    );
 
   actorRouter.route("/following").get((request, response) => {});
 

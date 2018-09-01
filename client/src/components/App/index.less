@@ -1,1 +1,32 @@
 h1 { color: purple; }
+
+.tooterface {
+  margin-top: 1em;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+
+  > div {
+    padding-right: 1em;
+    flex: 1;
+    
+    h2 {
+      margin: 0;
+    }
+  }
+}
+
+ul.notes {
+  list-style-type: none;
+  padding-left: 0em;  
+  li.note {
+    border: 1px solid #ddd;
+    border-radius: 0.25em;
+    padding: 0.5em;
+    margin-bottom: 1em;
+    
+    .e-content, .e-content p {
+      margin: 1em 0 0 0;
+    }
+  }
+}

@@ -14,25 +14,20 @@ const {
 const HOST = process.env.HOST || `${PROJECT_DOMAIN}.glitch.me`;
 
 const setupApp = app => {
-  // Use an indirect bootstrap for express app that leans on 
-  // the require() cache for every request, so that clearing
-  // the cache results in code reload.
+  // TODO: Split out any resource that are expensive to
+  // initialize into more persistent references. (e.g. db)
+  const config = require("./server/config")({ env: process.env });
+  
+  // Use an indirect middleware that leans on the require() 
+  // cache - clearing cache results in code reload.
   app.use((req, res, next) =>
-    // TODO: Split out any resource that are expensive to
-    // initialize into more persistent references. (e.g. db)
-    require("./server")(
-      require("./server/config")({
-        env: process.env
-      })
-    )(req, res, next));
+    require("./server")(config)(req, res, next));
 
   // These are paths where server-related modules live
-  const paths = [
-    "lib",
-    "server"
-  ].map(name => path.join(__dirname, name));
+  const paths = [ "lib", "server" ]
+    .map(name => path.join(__dirname, name));
   
-  // Set up a low key file watcher on the paths.
+  // Set up a file watcher on the paths.
   const watcher = chokidar.watch(paths, {
     usePolling: true,
     interval: 1000,
