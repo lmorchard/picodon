@@ -27,7 +27,7 @@ app.use((req, res, next) =>
 const paths = [ "lib", "server" ]
   .map(name => path.join(__dirname, name));
 
-// Set up a file watcher n the paths.
+// Set up a file watcher on the paths.
 const watcher = chokidar.watch(paths, {
   usePolling: true,
   interval: 1000,
