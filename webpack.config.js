@@ -12,42 +12,7 @@ const {
 } = process.env;
 
 const HOST = process.env.HOST || `${PROJECT_DOMAIN}.glitch.me`;
-
-const setupApp = app => {
-  // TODO: Split out any resource that are expensive to
-  // initialize into more persistent references. (e.g. db)
-  const config = require("./server/config")({ env: process.env });
-  
-  // Use an indirect middleware that leans on the require() 
-  // cache - clearing cache results in code reload.
-  app.use((req, res, next) =>
-    require("./server")(config)(req, res, next));
-
-  // These are paths where server-related modules live
-  const paths = [ "lib", "server" ]
-    .map(name => path.join(__dirname, name));
-  
-  // Set up a file watcher on the paths.
-  const watcher = chokidar.watch(paths, {
-    usePolling: true,
-    interval: 1000,
-    awaitWriteFinish: {
-      stabilityThreshold: 1000,
-      pollInterval: 500
-    }
-  });
-
-  // Whenever anything happens to any file, clear the require()
-  // cache for *all* watched paths.
-  watcher.on("ready", () => {
-    watcher.on("all", (event, path) => {
-      console.log("Clearing require() cache for server");
-      Object.keys(require.cache)
-        .filter(id => paths.filter(path => id.startsWith(path)).length > 0)
-        .forEach(id => delete require.cache[id]);
-    });
-  });
-};
+const API_PORT = parseInt(PORT, 10) + 1;
 
 module.exports = {
   mode: NODE_ENV === "development" ? "development" : "production",
@@ -59,14 +24,22 @@ module.exports = {
     filename: "[name].js"
   },
   watchOptions: {
-    aggregateTimeout: 500,
-    poll: 500
+    aggregateTimeout: 1500,
+    poll: 2000
   },
   devServer: {
     disableHostCheck: true,
     public: HOST,
     port: PORT,
-    after: setupApp,
+    proxy: {
+      '/': {
+        target: `http://localhost:${API_PORT}`
+      },
+      '/socket': {
+        target: `ws://localhost:${API_PORT}`,
+        ws: true
+      }
+    }
   },
   plugins: [
     new webpack.DefinePlugin({

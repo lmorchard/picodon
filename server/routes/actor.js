@@ -1,9 +1,13 @@
 const express = require("express");
-const { requireAuthentication } = require("../lib/utils");
+const {
+  requireAuthentication,
+  asyncHandler,
+  expandObjects
+} = require("../lib/utils");
 const { verifyRequest } = require("../lib/crypto");
-const { asyncHandler } = require("../middleware");
 const {
   ID_PUBLIC,
+  isActivity,
   activityFindQuery,
   isAddressedToQuery,
   dateNow,
@@ -17,6 +21,8 @@ const {
 module.exports = context => {
   const {
     app,
+    fetch,
+    queues,
     db,
     USERNAME,
     ACTOR_KEY_URL,
@@ -62,51 +68,63 @@ module.exports = context => {
     .route("/outbox")
     .get(
       asyncHandler(async (request, response) => {
-        const items = await db.objects
+        let items = await db.objects
           .find({
             $and: [
-              activityFindQuery,
               { "object.actor": ACTOR_URL },
+              activityFindQuery,
               queryPublicForUnauthed(request)
             ]
           })
           .sort({ "object.published": -1 })
           .limit(15);
-        response.json(
-          OrderedCollection({
-            items: items.map(item => item.object)
-          })
-        );
+
+        items = items.map(item => item.object);
+        if (request.query.expand) {
+          items = await expandObjects(queues.fetchHigh, items);
+        }
+        response.json(OrderedCollection({ items }));
       })
     )
     .post(
       requireAuthentication,
       asyncHandler(async (req, res) => {
-        const { object } = req.body;
+        const incoming = req.body;
 
-        const objectID = ObjectUrl({ baseURL: ACTOR_URL, uuid: UUID() });
-        Object.assign(object, {
-          id: objectID,
-          url: objectID
-        });
+        // TODO: some schema validation here
 
-        const createID = ObjectUrl({ baseURL: ACTOR_URL, uuid: UUID() });
-        const createActivity = ActivityCreate({
-          id: createID,
-          url: createID,
-          actor: ACTOR_URL,
-          to: [ID_PUBLIC],
-          published: dateNow(),
-          object
-        });
+        let object, activity;
+
+        const objectId = ObjectUrl({ baseURL: ACTOR_URL, uuid: UUID() });
+        const activityId = ObjectUrl({ baseURL: ACTOR_URL, uuid: UUID() });
+
+        if (isActivity(incoming)) {
+          activity = incoming;
+          activity.id = activityId;
+          activity.actor = ACTOR_URL;
+          activity.published = dateNow();
+          object = activity.object;
+          object.id = objectId;
+        } else {
+          object = incoming;
+          object.id = objectId;
+          activity = ActivityCreate({
+            id: activityId,
+            actor: ACTOR_URL,
+            to: object.to,
+            cc: object.cc,
+            bto: object.bto,
+            bcc: object.bcc,
+            audience: object.audience,
+            published: dateNow(),
+            object
+          });
+        }
 
         await db.objects.insert({ _id: object.id, object });
-        await db.objects.insert({
-          _id: createActivity.id,
-          object: createActivity
-        });
+        await db.objects.insert({ _id: activity.id, object: activity });
 
-        console.log("CREATE", createActivity);
+        console.log("CREATE", activity);
 
         res
           .status(201)
@@ -120,7 +138,7 @@ module.exports = context => {
     .route("/inbox")
     .get(
       asyncHandler(async (request, response) => {
-        const items = await db.objects
+        let items = await db.objects
           .find({
             $and: [
               activityFindQuery,
@@ -130,22 +148,30 @@ module.exports = context => {
           })
           .sort({ "object.published": -1 })
           .limit(15);
-        response.json(
-          OrderedCollection({
-            items: items.map(item => item.object)
-          })
-        );
+
+        items = items.map(item => item.object);
+        if (request.query.expand) {
+          items = await expandObjects(queues.fetchHigh, items);
+        }
+        response.json(OrderedCollection({ items }));
       })
     )
     .post(
       asyncHandler(async (request, response) => {
         const { method, originalUrl: path, headers, body } = request;
 
-        const requestVerified = await verifyRequest({ method, path, headers });
+        const requestVerified = await verifyRequest({
+          fetch,
+          method,
+          path,
+          headers
+        });
         if (!requestVerified) {
           // TODO: log these messages for later review? lots of Deleted actions for users
           return response.status(401).send("HTTP signature not verified");
         }
+
+        // TODO: verify content with source ID/URI
 
         const activity = body;
         await db.objects.insert({ _id: activity.id, object: activity });

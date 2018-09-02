@@ -2,15 +2,26 @@ import React from "react";
 
 import "./index.less";
 
-import { ID_PUBLIC, dateNow, ObjectNote } from "../../../../lib/stamps";
+import {
+  ID_PUBLIC,
+  dateNow,
+  ActivityCreate,
+  ObjectNote
+} from "../../../../lib/stamps";
 
 export default class TooterBox extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {
-      content: ""
-    };
+    this.state = this.defaultState();
   }
+
+  defaultState = () => ({
+    to: ID_PUBLIC,
+    cc: "",
+    content: ""
+  });
+
+  resetState = () => this.setState(this.defaultState());
 
   render() {
     return (
@@ -19,8 +30,20 @@ export default class TooterBox extends React.Component {
           <textarea
             name="content"
             value={this.state.content}
-            onKeyPress={this.handleKeyPress}
+            onKeyPress={this.handleContentKeyPress}
             onChange={this.handleContentChange}
+          />
+          <input
+            type="text"
+            placeholder="to"
+            value={this.state.to}
+            onChange={this.handleToChange}
+          />
+          <input
+            type="text"
+            placeholder="cc"
+            value={this.state.cc}
+            onChange={this.handleCcChange}
           />
           <input type="submit" value="Toot!" />
         </form>
@@ -28,11 +51,14 @@ export default class TooterBox extends React.Component {
     );
   }
 
-  handleContentChange = ev => {
-    this.setState({ content: ev.target.value });
-  };
+  handleToChange = ev => this.setState({ to: ev.target.value });
 
-  handleKeyPress = ev => {
+  handleCcChange = ev => this.setState({ cc: ev.target.value });
+
+  handleContentChange = ev => this.setState({ content: ev.target.value });
+
+  handleContentKeyPress = ev => {
+    // Submit on ctrl-enter
     if (ev.ctrlKey && ev.charCode === 13) {
       this.handleSubmit(ev);
     }
@@ -49,21 +75,31 @@ export default class TooterBox extends React.Component {
     const actor = authUser.actor;
 
     const content = `<p>${this.state.content}</p>`;
-    this.setState({ content: "" });
+    this.resetState();
 
-    const object = ObjectNote({
-      to: [ID_PUBLIC],
-      published: dateNow(),
-      attributedTo: actor.id,
-      content
+    const activity = ActivityCreate({
+      object: ObjectNote({
+        published: dateNow(),
+        attributedTo: actor.id,
+        content
+      })
     });
 
-    const outboxUrl = actor.outbox;
+    if (this.state.to) {
+      activity.to = activity.object.to = this.state.to.split(/[,;] ?/);
+    }
 
+    if (this.state.cc) {
+      activity.cc = activity.object.cc = this.state.cc.split(/[,;] ?/);
+    }
+
+    console.log("ACTIVITY", activity);
+
+    const outboxUrl = actor.outbox;
     fetch(outboxUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ object })
+      body: JSON.stringify(activity)
     })
       .then(res => Promise.all([res.status, res.json()]))
       .then(([status, data]) => {
