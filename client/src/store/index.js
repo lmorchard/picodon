@@ -9,10 +9,12 @@ const actions = createActions(
   "setUser",
   "clearUser",
   "updateInbox",
-  "updateOutbox"
+  "updateOutbox",
+  "updateQueueStats"
 );
 
 const selectors = {
+  queueStats: state => state.queue.stats,
   inboxActivities: state => state.activities.inbox,
   outboxActivities: state => state.activities.outbox,
   isLoggedIn: state => !!state.auth.user,
@@ -22,19 +24,28 @@ const selectors = {
 const rootReducer = combineReducers({
   activities: handleActions(
     {
-      [actions.updateInbox]: (state, { payload: collection }) => ({
+      [actions.updateInbox]: (state, { payload: collection = {} }) => ({
         ...state,
-        inbox: collection.orderedItems
+        inbox: collection.orderedItems || []
       }),
-      [actions.updateOutbox]: (state, { payload: collection }) => ({
+      [actions.updateOutbox]: (state, { payload: collection = {} }) => ({
         ...state,
-        outbox: collection.orderedItems
+        outbox: collection.orderedItems || []
       })
     },
     {
       inbox: [],
       outbox: []
     }
+  ),
+  queue: handleActions(
+    {
+      [actions.updateQueueStats]: (state, { payload: stats = {} }) => ({
+        ...state,
+        stats
+      })
+    },
+    { stats: {} }
   ),
   auth: handleActions(
     {

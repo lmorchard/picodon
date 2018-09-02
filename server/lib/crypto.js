@@ -25,7 +25,7 @@ const signRequest = ({
   ].join(", ");
 };
 
-const verifyRequest = async ({ method, path, headers }) => {
+const verifyRequest = async ({ fetch, method, path, headers }) => {
   const lcHeaders = normalizeHeaders(headers);
   const sigParts = lcHeaders.signature.split(/, ?/).reduce((acc, part) => {
     const [key, value] = part.split("=");
@@ -44,7 +44,7 @@ const verifyRequest = async ({ method, path, headers }) => {
     .filter(k => k !== "(request-target)");
   const toVerify = requestCleartext({ method, path, headerNames, lcHeaders });
 
-  const key = await getPublicKey({ keyId });
+  const key = await getPublicKey({ fetch, keyId });
   if (!key) return false;
 
   return crypto
@@ -75,12 +75,12 @@ const normalizeHeaders = headers =>
   );
 
 // TODO: cache public keys
-const getPublicKey = async ({ keyId }) => {
+const getPublicKey = async ({ fetch, keyId }) => {
   try {
-    const actor = await fetchJson(keyId);
+    const actor = await fetchJson(fetch, keyId);
     let publicKey = actor.publicKey;
     if (typeof actor.publicKey === "string") {
-      publicKey = await fetchJson(publicKey);
+      publicKey = await fetchJson(fetch, publicKey);
     }
     // TODO: verify owner?
     return publicKey.publicKeyPem;
@@ -92,6 +92,5 @@ const getPublicKey = async ({ keyId }) => {
 module.exports = {
   signRequest,
   verifyRequest,
-  fetchJson,
   getPublicKey
 };

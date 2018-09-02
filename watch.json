@@ -5,13 +5,15 @@
     ]
   },
   "restart": {
-    "include": [
-      "^\\.env$",
-      "webpack\\.config\\.js"
-    ],
     "exclude": [
       "^client/",
       "^server/"
+    ],
+    "include": [
+      "dev\\.js",
+      "^\\.env$",
+      "webpack\\.config\\.js",
+      "server/sockets/index\\.js"
     ]
   },
   "throttle": 1000

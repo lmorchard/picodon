@@ -4,12 +4,14 @@ import { applyMiddleware, createStore /* , combineReducers */ } from "redux";
 import { Provider } from "react-redux";
 import promiseMiddleware from "redux-promise";
 import { composeWithDevTools } from "redux-devtools-extension";
+import ReconnectingWebSocket from "reconnecting-websocket";
+import { fetchJson } from "./lib/utils";
 import { rootReducer, actions, selectors } from "./store";
 
 import "./index.less";
 import App from "./components/App";
 
-let store;
+let store, socket;
 
 function init() {
   const root = document.createElement("div");
@@ -17,8 +19,8 @@ function init() {
   document.body.appendChild(root);
 
   store = setupStore();
+  setupSockets();
   checkAuth();
-  setInterval(checkActivities, 1000);
   renderApp();
 }
 
@@ -40,35 +42,66 @@ function checkAuth() {
     .then(([status, data]) => {
       if (200 == status && data && data.user) {
         store.dispatch(actions.setUser(data.user));
+        refreshServerData();
       }
     })
     .catch(err => console.log("AUTH FAILURE", err));
 }
 
-const fetchJson = url =>
-  fetch(url, {
-    headers: {
-      Accept:
-        'application/ld+json; profile="https://www.w3.org/ns/activitystreams", application/json'
-    }
-  }).then(r => r.json());
+function setupSockets() {
+  const { protocol, host } = window.location;
+  const socketUrl = `${protocol === "https:" ? "wss" : "ws"}://${host}/socket`;
 
-function checkActivities() {
+  socket = new ReconnectingWebSocket(socketUrl);
+
+  socket.addEventListener("open", event => {
+    console.log("SOCKET OPEN");
+  });
+
+  socket.addEventListener("close", event => {
+    console.log("SOCKET CLOSE");
+  });
+
+  socket.addEventListener("message", event => {
+    console.log("SOCKET MESSAGE", event.data);
+  });
+
+  setInterval(() => {
+    console.log("pong!");
+    socket.send(
+      JSON.stringify({
+        event: "pong"
+      })
+    );
+  }, 2000);
+}
+
+// TODO: switch over to websockets for this
+function refreshServerData() {
   const state = store.getState();
   if (!selectors.isLoggedIn(state)) {
+    setTimeout(refreshServerData, 5000);
     return;
   }
 
   const user = selectors.authUser(state);
   const actor = user.actor;
 
-  fetchJson(actor.inbox)
-    .then(data => store.dispatch(actions.updateInbox(data)))
-    .catch(err => console.log("INBOX FAILURE", err));
-
-  fetchJson(actor.outbox)
-    .then(data => store.dispatch(actions.updateOutbox(data)))
-    .catch(err => console.log("OUTBOX FAILURE", err));
+  Promise.all([
+    fetchJson(actor.inbox + "?expand=1"),
+    fetchJson(actor.outbox + "?expand=1"),
+    fetchJson("/queues")
+  ])
+    .then(([inboxData, outboxData, queueStatsData]) => {
+      store.dispatch(actions.updateInbox(inboxData));
+      store.dispatch(actions.updateOutbox(outboxData));
+      store.dispatch(actions.updateQueueStats(queueStatsData));
+      setTimeout(refreshServerData, 5000);
+    })
+    .catch(err => {
+      console.log("DATA FETCH FAILURE", err);
+      setTimeout(refreshServerData, 5000);
+    });
 }
 
 function renderApp() {
