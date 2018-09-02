@@ -14,12 +14,39 @@ exports.asyncHandler = fn => (req, res, next) =>
 
 exports.promiseMap = (items, fn) => Promise.all(items.map(fn));
 
-exports.expandObject = async (fetch, object) => {
-  if (typeof object.actor === "string") {
-    object.actor = await exports.fetchJson(fetch, object.actor);
-  }
-  return object;
-};
+exports.expandObjects = async (
+  fetch, objects, toDereference = ["actor"]
+) => {
+  // 1. Gather IDs to dereference, forming unique set
+  const ids = {};
+  objects.forEach(object => {
+    toDereference.forEach(name => {
+      if (typeof object[name] === "string") {
+        ids[object[name]] = true;
+      }
+    })
+  });
 
-exports.expandObjects = async (fetch, objects) =>
-  exports.promiseMap(objects, object => exports.expandObject(fetch, object));
+  // 2. Dereference the unique set of IDs
+  const fetches = await Promise.all(
+    Object.keys(ids).map(id =>
+      exports.fetchJson(fetch, id).then(data => [id, data]))
+  );
+  
+  // 3. Index the fetched objects by ID
+  const byId = fetches.reduce(
+    (acc, [id, data]) => ({ ...acc, [id]: data }),
+    {}
+  );
+
+  // 4. Replace the IDs with data in the objects
+  return objects.map(object => {
+    const output = { ...object };
+    toDereference.forEach(name => {
+      if (typeof output[name] === "string") {
+        output[name] = byId[output[name]];
+      }
+    });
+    return output;
+  });
+};

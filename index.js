@@ -11,10 +11,11 @@ const context = require("./server/config")({
 const app = express();
 context.app = app;
 context.server = http.createServer(app);
-context.wss = require("./server/sockets")(context);
+context.sockets = require("./server/sockets")(context);
 // TODO: move more things here out of the ./server modules 
 // that shouldn't be reloaded?
 
+// Serve up static webpack build if we're not proxied through the dev server
 app.use(express.static("client/build"));
 
 // This weird little indirect middleware leans on node's require() cache
@@ -26,7 +27,7 @@ app.use((req, res, next) =>
 const paths = [ "lib", "server" ]
   .map(name => path.join(__dirname, name));
 
-// Set up a file watcher on the paths.
+// Set up a file watcher n the paths.
 const watcher = chokidar.watch(paths, {
   usePolling: true,
   interval: 1000,

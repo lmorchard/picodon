@@ -10,7 +10,7 @@
       "^server/"
     ],
     "include": [
-      "dev\\.js",
+      "index\\.js",
       "^\\.env$",
       "webpack\\.config\\.js",
       "server/sockets/index\\.js"

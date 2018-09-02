@@ -1,12 +1,12 @@
 import React from "react";
 import { render } from "react-dom";
-import { applyMiddleware, createStore /* , combineReducers */ } from "redux";
+import { applyMiddleware, createStore } from "redux";
 import { Provider } from "react-redux";
 import promiseMiddleware from "redux-promise";
 import { composeWithDevTools } from "redux-devtools-extension";
 import ReconnectingWebSocket from "reconnecting-websocket";
 import { fetchJson } from "./lib/utils";
-import { rootReducer, actions, selectors } from "./store";
+import { rootReducer, actions, selectors } from "../../lib/store";
 
 import "./index.less";
 import App from "./components/App";
@@ -19,8 +19,8 @@ function init() {
   document.body.appendChild(root);
 
   store = setupStore();
-  setupSockets();
-  checkAuth();
+  setupWebSocket();
+  setupAuth();
   renderApp();
 }
 
@@ -36,51 +36,74 @@ function setupStore() {
   );
 }
 
-function checkAuth() {
+function setupAuth() {
+  store.dispatch(actions.setAuthLoading());
   fetch("/auth", { headers: { Accept: "application/json" } })
     .then(res => Promise.all([res.status, res.json()]))
     .then(([status, data]) => {
       if (200 == status && data && data.user) {
-        store.dispatch(actions.setUser(data.user));
+        store.dispatch(actions.setAuthUser(data.user));
         refreshServerData();
       }
     })
     .catch(err => console.log("AUTH FAILURE", err));
 }
 
-function setupSockets() {
-  const { protocol, host } = window.location;
-  const socketUrl = `${protocol === "https:" ? "wss" : "ws"}://${host}/socket`;
+const socketSend = (event, data = {}) => {
+  if (!socket) return;
+  socket.send(JSON.stringify({ ...data, event }));
+};
 
-  socket = new ReconnectingWebSocket(socketUrl);
+function setupWebSocket() {
+  const {
+    setSocketConnecting,
+    setSocketConnected,
+    setSocketDisconnected
+  } = actions;
+
+  const { protocol, host } = window.location;
+  const socketUrl =
+    `${protocol === "https:" ? "wss" : "ws"}://${host}/socket`;
+  socket = new ReconnectingWebSocket(socketUrl, [], {
+    connectionTimeout: 1000,
+    maxRetries: 5
+  });
+
+  store.dispatch(setSocketConnecting());
 
   socket.addEventListener("open", event => {
-    console.log("SOCKET OPEN");
+    store.dispatch(setSocketConnected());
   });
 
   socket.addEventListener("close", event => {
-    console.log("SOCKET CLOSE");
+    store.dispatch(setSocketDisconnected());
   });
 
   socket.addEventListener("message", event => {
-    console.log("SOCKET MESSAGE", event.data);
+    try {
+      const data = JSON.parse(event.data);
+      const name = data.event in socketEventHandlers ? data.event : "default";
+      socketEventHandlers[name]({ event, data });
+    } catch (err) {
+      console.log("socket message error", err, event);
+    }
   });
-
-  setInterval(() => {
-    console.log("pong!");
-    socket.send(
-      JSON.stringify({
-        event: "pong"
-      })
-    );
-  }, 2000);
 }
+
+const socketEventHandlers = {
+  storeDispatch: ({ data: { action } }) => {
+    store.dispatch(action);
+  },
+  default: ({ data }) => {
+    console.log("unexpected socket message", data);
+  }
+};
 
 // TODO: switch over to websockets for this
 function refreshServerData() {
   const state = store.getState();
   if (!selectors.isLoggedIn(state)) {
-    setTimeout(refreshServerData, 5000);
+    setTimeout(refreshServerData, 10000);
     return;
   }
 
@@ -89,25 +112,27 @@ function refreshServerData() {
 
   Promise.all([
     fetchJson(actor.inbox + "?expand=1"),
-    fetchJson(actor.outbox + "?expand=1"),
-    fetchJson("/queues")
+    fetchJson(actor.outbox + "?expand=1")
   ])
     .then(([inboxData, outboxData, queueStatsData]) => {
       store.dispatch(actions.updateInbox(inboxData));
       store.dispatch(actions.updateOutbox(outboxData));
-      store.dispatch(actions.updateQueueStats(queueStatsData));
-      setTimeout(refreshServerData, 5000);
+      setTimeout(refreshServerData, 10000);
     })
     .catch(err => {
       console.log("DATA FETCH FAILURE", err);
-      setTimeout(refreshServerData, 5000);
+      setTimeout(refreshServerData, 10000);
     });
 }
 
 function renderApp() {
   render(
     <Provider store={store}>
-      <App />
+      <App
+        {...{
+          socketSend
+        }}
+      />
     </Provider>,
     document.getElementById("root")
   );

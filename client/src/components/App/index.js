@@ -4,7 +4,7 @@ import { hot } from "react-hot-loader";
 import {
   mapActionsToDispatchProps,
   mapSelectorsToStateProps
-} from "../../store";
+} from "../../../../lib/store";
 
 import "./index.less";
 

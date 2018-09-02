@@ -9,37 +9,45 @@ export default class AuthState extends React.Component {
   }
 
   render() {
-    const { isLoggedIn, authUser } = this.props;
+    const { isLoggedIn, authUser, authLoading } = this.props;
 
-    return isLoggedIn() ? (
-      <div>
-        Logged in as: {authUser().displayName} -{" "}
-        <button onClick={this.handleLogout}>Logout</button>
+    if (authLoading()) {
+      return <div className="authState loading">Loading...</div>;
+    }
+    if (isLoggedIn()) {
+      return (
+        <div className="authState loggedIn">
+          Logged in as: {authUser().displayName} -{" "}
+          <button onClick={this.handleLogout}>Logout</button>
+        </div>
+      );
+    }
+    return (
+      <div className="authState loggedOut">
+        <form
+          ref={this.formRef}
+          action="/auth/login"
+          method="post"
+          onSubmit={this.handleLogin}
+        >
+          <div>
+            <label>Username:</label>
+            <input type="text" name="username" />
+          </div>
+          <div>
+            <label>Password:</label>
+            <input type="password" name="password" />
+          </div>
+          <div>
+            <input type="submit" value="Log In" />
+          </div>
+        </form>
       </div>
-    ) : (
-      <form
-        ref={this.formRef}
-        action="/auth/login"
-        method="post"
-        onSubmit={this.handleLogin}
-      >
-        <div>
-          <label>Username:</label>
-          <input type="text" name="username" />
-        </div>
-        <div>
-          <label>Password:</label>
-          <input type="password" name="password" />
-        </div>
-        <div>
-          <input type="submit" value="Log In" />
-        </div>
-      </form>
     );
   }
 
   handleLogin = ev => {
-    const { setUser, clearUser } = this.props;
+    const { setAuthUser, clearAuthUser } = this.props;
 
     const loginFormData = new FormData(this.formRef.current);
     const loginData = ["username", "password"].reduce(
@@ -58,9 +66,9 @@ export default class AuthState extends React.Component {
       .then(res => Promise.all([res.status, res.json()]))
       .then(([status, data]) => {
         if (200 == status) {
-          setUser(data.user);
+          setAuthUser(data.user);
         } else {
-          clearUser();
+          clearAuthUser();
         }
       })
       .catch(err => {
@@ -77,7 +85,7 @@ export default class AuthState extends React.Component {
       .then(res => Promise.all([res.status, res.json()]))
       .then(([status, data]) => {
         if (200 == status) {
-          clearUser();
+          clearAuthUser();
         }
       })
       .catch(err => {
