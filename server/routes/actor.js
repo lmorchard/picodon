@@ -1,10 +1,11 @@
 const express = require("express");
+const { actions } = require("../../lib/store");
+const { verifyRequest } = require("../lib/crypto");
 const {
   requireAuthentication,
   asyncHandler,
   expandObjects
 } = require("../lib/utils");
-const { verifyRequest } = require("../lib/crypto");
 const {
   ID_PUBLIC,
   isActivity,
@@ -23,6 +24,7 @@ module.exports = context => {
     app,
     fetch,
     queues,
+    sockets,
     db,
     USERNAME,
     ACTOR_KEY_URL,
@@ -38,16 +40,14 @@ module.exports = context => {
       ? {}
       : isAddressedToQuery(ID_PUBLIC);
 
-  actorRouter.route("/").get((request, response) => {
-    response.json(
-      LocalActor({
-        USERNAME,
-        ACTOR_URL,
-        ACTOR_KEY_URL,
-        PUBLIC_KEY
-      })
-    );
+  const localActor = LocalActor({
+    USERNAME,
+    ACTOR_URL,
+    ACTOR_KEY_URL,
+    PUBLIC_KEY
   });
+
+  actorRouter.route("/").get((request, response) => response.json(localActor));
 
   actorRouter.route("/objects/:uuid").get(async (req, res) => {
     const { uuid } = req.params;
@@ -124,7 +124,16 @@ module.exports = context => {
         await db.objects.insert({ _id: object.id, object });
         await db.objects.insert({ _id: activity.id, object: activity });
 
-        console.log("CREATE", activity);
+        // TODO: Move this into delivery?
+        sockets.sendToUser(
+          req.user.id,
+          sockets.storeDispatch(
+            actions.pushOutbox({
+              ...activity,
+              actor: localActor
+            })
+          )
+        );
 
         res
           .status(201)
@@ -176,8 +185,14 @@ module.exports = context => {
         const activity = body;
         await db.objects.insert({ _id: activity.id, object: activity });
 
-        const object = { ...activity.object, ...activity.context };
-        await db.objects.insert({ _id: object.id, object });
+        // TODO: Move this into delivery?
+        const expanded = await expandObjects(queues.fetchHigh, [activity]);
+        ["to", "cc"].forEach(propName =>
+          sockets.sendToActors(
+            activity[propName],
+            sockets.storeDispatch(actions.pushInbox(expanded[0]))
+          )
+        );
 
         return response.status(202).json({});
       })

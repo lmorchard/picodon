@@ -14,12 +14,7 @@ import App from "./components/App";
 let store, socket;
 
 function init() {
-  const root = document.createElement("div");
-  root.id = "root";
-  document.body.appendChild(root);
-
-  store = setupStore();
-  setupWebSocket();
+  setupStore();
   setupAuth();
   renderApp();
 }
@@ -29,7 +24,7 @@ function setupStore() {
 
   const initialState = {};
 
-  return createStore(
+  store = createStore(
     rootReducer,
     initialState,
     composeEnhancers(applyMiddleware(promiseMiddleware))
@@ -37,6 +32,7 @@ function setupStore() {
 }
 
 function setupAuth() {
+  store.subscribe(handleIsLoggedInChange);
   store.dispatch(actions.setAuthLoading());
   fetch("/auth", { headers: { Accept: "application/json" } })
     .then(res => Promise.all([res.status, res.json()]))
@@ -44,13 +40,29 @@ function setupAuth() {
       if (200 == status && data && data.user) {
         store.dispatch(actions.setAuthUser(data.user));
         refreshServerData();
+      } else {
+        store.dispatch(actions.clearAuthUser());
       }
     })
-    .catch(err => console.log("AUTH FAILURE", err));
+    .catch(err => {
+      store.dispatch(actions.setAuthFailed());
+      console.log("AUTH FAILURE", err);
+    });
+}
+
+let currentIsLoggedIn = false;
+function handleIsLoggedInChange() {
+  let previousIsLoggedIn = currentIsLoggedIn;
+  currentIsLoggedIn = selectors.isLoggedIn(store.getState());
+  if (currentIsLoggedIn === previousIsLoggedIn) {
+    return;
+  }
+  setupWebSocket();
+  refreshServerData();
 }
 
 const socketSend = (event, data = {}) => {
-  if (!socket) return;
+  if (!(socket && socket.readyState === WebSocket.OPEN)) return;
   socket.send(JSON.stringify({ ...data, event }));
 };
 
@@ -61,9 +73,13 @@ function setupWebSocket() {
     setSocketDisconnected
   } = actions;
 
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    socketSend("logout");
+    socket.close();
+  }
+
   const { protocol, host } = window.location;
-  const socketUrl =
-    `${protocol === "https:" ? "wss" : "ws"}://${host}/socket`;
+  const socketUrl = `${protocol === "https:" ? "wss" : "ws"}://${host}/socket`;
   socket = new ReconnectingWebSocket(socketUrl, [], {
     connectionTimeout: 1000,
     maxRetries: 5
@@ -103,7 +119,6 @@ const socketEventHandlers = {
 function refreshServerData() {
   const state = store.getState();
   if (!selectors.isLoggedIn(state)) {
-    setTimeout(refreshServerData, 10000);
     return;
   }
 
@@ -117,24 +132,27 @@ function refreshServerData() {
     .then(([inboxData, outboxData, queueStatsData]) => {
       store.dispatch(actions.updateInbox(inboxData));
       store.dispatch(actions.updateOutbox(outboxData));
-      setTimeout(refreshServerData, 10000);
     })
     .catch(err => {
       console.log("DATA FETCH FAILURE", err);
-      setTimeout(refreshServerData, 10000);
     });
 }
 
 function renderApp() {
+  const root = document.createElement("div");
+  root.id = "root";
+  document.body.appendChild(root);
+
   render(
     <Provider store={store}>
       <App
         {...{
-          socketSend
+          socketSend,
+          refreshServerData
         }}
       />
     </Provider>,
-    document.getElementById("root")
+    root
   );
 }
 

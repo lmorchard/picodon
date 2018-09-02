@@ -7,13 +7,14 @@
   "restart": {
     "exclude": [
       "^client/",
-      "^server/"
+      "^server/routes/",
+      "^server/sockets/handlers\\.js"
     ],
     "include": [
       "index\\.js",
+      "^server",
       "^\\.env$",
-      "webpack\\.config\\.js",
-      "server/sockets/index\\.js"
+      "webpack\\.config\\.js"
     ]
   },
   "throttle": 1000
