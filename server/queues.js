@@ -9,7 +9,7 @@ module.exports = context => {
   const fetchQueue = new PQueue({
     concurrency: 4
   });
-  
+
   const queues = {
     fetch: (...args) => fetchQueue.add(() => fetch(...args)),
     fetchHigh: (...args) =>
@@ -19,15 +19,16 @@ module.exports = context => {
   };
 
   setInterval(() => {
-    sockets.broadcast({
-      event: "storeDispatch",
-      action: actions.updateQueueStats({
-        size: fetchQueue.size,
-        pending: fetchQueue.pending,
-        isPaused: fetchQueue.isPaused
-      })
-    });
-  }, 2000);
+    sockets.broadcastToAuthed(
+      sockets.storeDispatch(
+        actions.updateQueueStats({
+          size: fetchQueue.size,
+          pending: fetchQueue.pending,
+          isPaused: fetchQueue.isPaused
+        })
+      )
+    );
+  }, 500);
 
   return { ...context, queues };
 };

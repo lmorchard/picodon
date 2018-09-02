@@ -3,26 +3,32 @@ const path = require("path");
 const express = require("express");
 const chokidar = require("chokidar");
 
+// HACK: Increment the port to live alongside webpack proxy
 const PORT = parseInt(process.env.PORT, 10) + 1;
-const context = require("./server/config")({
-  env: { ...process.env, PORT }
-});
 
+// First, configure the server without routes.
 const app = express();
-context.app = app;
-context.server = http.createServer(app);
-context.sockets = require("./server/sockets")(context);
-// TODO: move more things here out of the ./server modules 
-// that shouldn't be reloaded?
-
-// Serve up static webpack build if we're not proxied through the dev server
-app.use(express.static("client/build"));
+const server = http.createServer(app);
+const context = require("./server")(
+  {
+    ...require("./server/config")({
+      env: { ...process.env, PORT }
+    }),
+    app,
+    server
+  }
+);
 
 // This weird little indirect middleware leans on node's require() cache
 // for every request, so that clearing the cache results in fresh code
-app.use((req, res, next) => 
-  require("./server")(context)(req, res, next));
-
+// for the server routes because they're frequently edited.
+app.use((req, res, next) => {
+  const routesApp = express();
+  const routesContext =
+    require("./server/routes")({ ...context, app: routesApp });
+  return routesApp(req, res, next);
+});
+  
 // These are paths where server-related modules live
 const paths = [ "lib", "server" ]
   .map(name => path.join(__dirname, name));
@@ -48,7 +54,7 @@ watcher.on("ready", () => {
   });
 });
 
-const { server, HOST } = context;
+const { HOST } = context;
 server.listen(PORT, () =>
    // eslint-disable-next-line no-console
   console.log(`Dev server is listening on ${HOST}:${PORT}`));

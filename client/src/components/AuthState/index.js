@@ -79,7 +79,7 @@ export default class AuthState extends React.Component {
   };
 
   handleLogout = ev => {
-    const { clearUser } = this.props;
+    const { clearAuthUser } = this.props;
 
     fetch("/auth/logout", { method: "POST" })
       .then(res => Promise.all([res.status, res.json()]))

@@ -1,20 +1,47 @@
 const uuidV4 = require("uuid/v4");
+const WebSocket = require("ws");
 const expressWs = require("express-ws");
+const cookieSession = require("cookie-session");
+const { requireAuthentication } = require("../lib/utils");
 
 module.exports = context => {
-  const { app, server } = context;
+  const { app, server, SERVER_SECRET } = context;
 
   const sockets = expressWs(app, server);
 
-  sockets.broadcast = message => {
-    const wss = sockets.getWss("/socket");
-    wss.clients.forEach(client => client.send(JSON.stringify(message)));
-  };
+  const openClients = () =>
+    Array.from(sockets.getWss("/socket").clients).filter(
+      client => client.readyState === WebSocket.OPEN
+    );
+
+  sockets.broadcastToAll = message =>
+    openClients().forEach(client => client.send(JSON.stringify(message)));
+
+  sockets.broadcastToAuthed = message =>
+    openClients()
+      .filter(client => !!client.user)
+      .forEach(client => client.send(JSON.stringify(message)));
+
+  sockets.sendToUser = (userId, message) =>
+    openClients()
+      .filter(client => client.user && client.user.id == userId)
+      .forEach(client => client.send(JSON.stringify(message)));
+
+  sockets.sendToActors = (actorIds, message) =>
+    openClients()
+      .filter(client => client.user && actorIds.includes(client.user.actor.id))
+      .forEach(client => client.send(JSON.stringify(message)));
+
+  sockets.storeDispatch = action => ({ event: "storeDispatch", action });
 
   app.ws("/socket", (ws, req) => {
     ws.id = uuidV4();
-    // ws.user = req.user;
-    console.log("WebSocket connection %s", ws.id);
+    ws.user = req.user;
+    console.log(
+      "WebSocket connection",
+      ws.id,
+      req.user ? req.user.id : "[unauth]"
+    );
     ws.on("message", message => {
       // HACK: require() this for every message to lean on the module
       // cache. The dev server will clear that cache on file changes.
@@ -29,5 +56,5 @@ module.exports = context => {
     });
   });
 
-  return sockets;
+  return { ...context, sockets };
 };

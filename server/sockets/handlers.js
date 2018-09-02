@@ -1,12 +1,8 @@
 module.exports = {
-  default: ({ ws, data }) => {
-    console.log("Unimplemented message", data, ws.id, (ws.user || {}).name);
+  logout: ({ ws }) => {
+    ws.close();
   },
-  pong: ({ ws, data }) => {
-    ws.send(
-      JSON.stringify({
-        parp: "parp"
-      })
-    );
+  default: ({ ws, data }) => {
+    console.log("Unimplemented message", data, ws.id, (ws.user || {}).id);
   }
 };
