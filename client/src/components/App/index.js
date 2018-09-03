@@ -25,7 +25,7 @@ const QueueStats = ({ queueStats }) => (
 
 const SocketStatus = ({ socketStatus }) => (
   <div className={classNames("socketStatus", socketStatus)}>
-    <span className="indicator">&#x23FA;</span> { socketStatus }
+    <span className="indicator">&#x23FA;</span> {socketStatus}
   </div>
 );
 

@@ -1,5 +1,4 @@
 const express = require("express");
-const { actions } = require("../../lib/store");
 const { verifyRequest } = require("../lib/crypto");
 const {
   requireAuthentication,
@@ -24,7 +23,6 @@ module.exports = context => {
     app,
     fetch,
     queues,
-    sockets,
     delivery,
     db,
     USERNAME,
