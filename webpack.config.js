@@ -1,6 +1,5 @@
 const webpack = require("webpack");
 const path = require("path");
-const chokidar = require("chokidar");
 
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
@@ -32,10 +31,10 @@ module.exports = {
     public: HOST,
     port: PORT,
     proxy: {
-      '/': {
+      "/": {
         target: `http://localhost:${API_PORT}`
       },
-      '/socket': {
+      "/socket": {
         target: `ws://localhost:${API_PORT}`,
         ws: true
       }

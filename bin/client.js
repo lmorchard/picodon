@@ -12,7 +12,7 @@ const {
 
 // const replyTo = "https://mastodon.social/@lmorchard/100598067502715098";
 // const replyTo = "https://botsin.space/@lmorchard/100608732576802402";
-const replyTo = "https://toot.lmorchard.com/@tester/100612621416928997";
+const replyTo = "https://toot.lmorchard.com/@tester/100660489765542527";
 const replyURL = new url.URL(replyTo);
 
 const body = JSON.stringify(

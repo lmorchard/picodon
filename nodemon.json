@@ -1,0 +1,16 @@
+{
+  "verbose": true,
+  "colours": false,
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "delay": 1000,
+  "watch": [
+    "./index.js",
+    "./lib/",
+    "./server/"
+  ],
+  "ignore": [
+    "./server/routes/"
+  ]
+}
