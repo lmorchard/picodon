@@ -7,13 +7,11 @@
   "restart": {
     "exclude": [
       "^client/",
-      "^server/routes/",
-      "^server/sockets/handlers\\.js"
+      "^server/"
     ],
     "include": [
-      "index\\.js",
-      "^server",
       "^\\.env$",
+      "^package\\.json$",
       "webpack\\.config\\.js"
     ]
   },

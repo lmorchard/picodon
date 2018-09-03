@@ -25,6 +25,7 @@ module.exports = context => {
     fetch,
     queues,
     sockets,
+    delivery,
     db,
     USERNAME,
     ACTOR_KEY_URL,
@@ -51,7 +52,6 @@ module.exports = context => {
 
   actorRouter.route("/objects/:uuid").get(async (req, res) => {
     const { uuid } = req.params;
-    console.log("UUID", uuid);
     try {
       const result = await db.objects.findOne({
         _id: ObjectUrl({ baseURL: ACTOR_URL, uuid })
@@ -121,19 +121,7 @@ module.exports = context => {
           });
         }
 
-        await db.objects.insert({ _id: object.id, object });
-        await db.objects.insert({ _id: activity.id, object: activity });
-
-        // TODO: Move this into delivery?
-        sockets.sendToUser(
-          req.user.id,
-          sockets.storeDispatch(
-            actions.pushOutbox({
-              ...activity,
-              actor: localActor
-            })
-          )
-        );
+        delivery.toOutbox({ activity });
 
         res
           .status(201)
@@ -176,23 +164,11 @@ module.exports = context => {
           headers
         });
         if (!requestVerified) {
-          // TODO: log these messages for later review? lots of Deleted actions for users
           return response.status(401).send("HTTP signature not verified");
         }
 
-        // TODO: verify content with source ID/URI
-
         const activity = body;
-        await db.objects.insert({ _id: activity.id, object: activity });
-
-        // TODO: Move this into delivery?
-        const expanded = await expandObjects(queues.fetchHigh, [activity]);
-        ["to", "cc"].forEach(propName =>
-          sockets.sendToActors(
-            activity[propName],
-            sockets.storeDispatch(actions.pushInbox(expanded[0]))
-          )
-        );
+        delivery.toInbox({ activity });
 
         return response.status(202).json({});
       })

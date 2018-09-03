@@ -1,11 +1,9 @@
 const uuidV4 = require("uuid/v4");
 const WebSocket = require("ws");
 const expressWs = require("express-ws");
-const cookieSession = require("cookie-session");
-const { requireAuthentication } = require("../lib/utils");
 
 module.exports = context => {
-  const { app, server, SERVER_SECRET } = context;
+  const { app, server } = context;
 
   const sockets = expressWs(app, server);
 

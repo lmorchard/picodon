@@ -6,54 +6,37 @@ const chokidar = require("chokidar");
 // HACK: Increment the port to live alongside webpack proxy
 const PORT = parseInt(process.env.PORT, 10) + 1;
 
-// First, configure the server without routes.
+// Configure the server without routes.
+const config = require("./server/config")({
+  env: { ...process.env, PORT }
+});
 const app = express();
 const server = http.createServer(app);
-const context = require("./server")(
-  {
-    ...require("./server/config")({
-      env: { ...process.env, PORT }
-    }),
-    app,
-    server
-  }
-);
+const context = require("./server")({ ...config, app, server });
 
-// This weird little indirect middleware leans on node's require() cache
-// for every request, so that clearing the cache results in fresh code
-// for the server routes because they're frequently edited.
-app.use((req, res, next) => {
-  const routesApp = express();
-  const routesContext =
-    require("./server/routes")({ ...context, app: routesApp });
-  return routesApp(req, res, next);
-});
+// HACK: Hit the require() cache on every hit for routes so that
+// clearing the cache results in fresh code.
+app.use((req, res, next) =>
+  require("./server/routes")({
+    ...context,
+    app: express() // Use a throwaway app for route mounting
+  }).app(req, res, next));
   
-// These are paths where server-related modules live
+// Watch server files, clear the require() cache on changes.
 const paths = [ "lib", "server" ]
   .map(name => path.join(__dirname, name));
-
-// Set up a file watcher on the paths.
-const watcher = chokidar.watch(paths, {
-  usePolling: true,
-  interval: 1000,
-  awaitWriteFinish: {
-    stabilityThreshold: 1000,
-    pollInterval: 500
+chokidar.watch(paths).on("all", (event, path) => {
+  // Only clear require cache entries from our specified paths.
+  for (let id of Object.keys(require.cache)) {
+    for (let path of paths) {
+      if (id.startsWith(path)) {
+        delete require.cache[id];
+      }
+    }
   }
 });
 
-// Whenever anything happens to any file, clear the require()
-// cache for *all* watched paths.
-watcher.on("ready", () => {
-  watcher.on("all", (event, path) => {
-    console.log("Clearing require() cache for server");
-    Object.keys(require.cache)
-      .filter(id => paths.filter(path => id.startsWith(path)).length > 0)
-      .forEach(id => delete require.cache[id]);
-  });
-});
-
+// Finally, get our server listening
 const { HOST } = context;
 server.listen(PORT, () =>
    // eslint-disable-next-line no-console

@@ -14,6 +14,18 @@ exports.asyncHandler = fn => (req, res, next) =>
 
 exports.promiseMap = (items, fn) => Promise.all(items.map(fn));
 
+exports.coerceArray = thing => {
+  if (!thing) { return []; }
+  return Array.isArray(thing) ? thing : [ thing ];
+}
+
+exports.dereferenceId = async (fetch, id) => {
+  if (typeof(id) !== "string") {
+    return id;
+  }
+  return exports.fetchJson(fetch, id);  
+};
+
 exports.expandObjects = async (fetch, objects, toDereference = ["actor"]) => {
   // 1. Gather IDs to dereference, forming unique set
   const ids = {};
@@ -26,10 +38,8 @@ exports.expandObjects = async (fetch, objects, toDereference = ["actor"]) => {
   });
 
   // 2. Dereference the unique set of IDs
-  const fetches = await Promise.all(
-    Object.keys(ids).map(id =>
-      exports.fetchJson(fetch, id).then(data => [id, data])
-    )
+  const fetches = await exports.promiseMap(Object.keys(ids), id =>
+    exports.fetchJson(fetch, id).then(data => [id, data])
   );
 
   // 3. Index the fetched objects by ID

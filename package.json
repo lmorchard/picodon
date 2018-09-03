@@ -7,7 +7,7 @@
   "scripts": {
     "start": "NODE_ENV=development npm-run-all --parallel server:webpack server:dev",
     "server:webpack": "webpack-dev-server --hot --watch --no-color",
-    "server:dev": "NODE_ENV=development node ./index.js",
+    "server:dev": "nodemon ./index.js",
     "build": "webpack",
     "format": "prettier --write './{bin,lib,client,server}/**/*.js'",
     "lint": "npm-run-all lint:*",

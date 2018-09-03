@@ -1,16 +1,20 @@
-const express = require("express");
 const PQueue = require("p-queue");
 const { actions } = require("../lib/store");
-const { requireAuthentication } = require("./lib/utils");
 
 module.exports = context => {
-  const { app, fetch, sockets } = context;
+  const { fetch, sockets } = context;
+
+  const deliveryQueue = new PQueue({
+    concurrency: 4
+  });
 
   const fetchQueue = new PQueue({
     concurrency: 4
   });
 
   const queues = {
+    deliveryQueue,
+    fetchQueue,
     fetch: (...args) => fetchQueue.add(() => fetch(...args)),
     fetchHigh: (...args) =>
       fetchQueue.add(() => fetch(...args), { priority: 10 }),
@@ -18,13 +22,18 @@ module.exports = context => {
       fetchQueue.add(() => fetch(...args), { priority: -10 })
   };
 
+  const queueStats = queue => ({
+    size: queue.size,
+    pending: queue.pending,
+    isPaused: queue.isPaused
+  });
+
   setInterval(() => {
     sockets.broadcastToAuthed(
       sockets.storeDispatch(
         actions.updateQueueStats({
-          size: fetchQueue.size,
-          pending: fetchQueue.pending,
-          isPaused: fetchQueue.isPaused
+          fetch: queueStats(fetchQueue),
+          delivery: queueStats(deliveryQueue)
         })
       )
     );
