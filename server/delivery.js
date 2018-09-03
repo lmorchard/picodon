@@ -1,25 +1,27 @@
 const { URL } = require("url");
-const PQueue = require("p-queue");
-const { fetchJson, expandObjects, dereferenceId, coerceArray, promiseMap } = require("./lib/utils");
+// const PQueue = require("p-queue");
+const {
+  fetchJson,
+  expandObjects,
+  dereferenceId,
+  coerceArray,
+  promiseMap
+} = require("./lib/utils");
 const { actions } = require("../lib/store");
 const { ID_PUBLIC } = require("../lib/stamps");
 const { signRequest } = require("./lib/crypto");
 const fetch = require("node-fetch");
 
 module.exports = context => {
-  const {
-    PRIVATE_KEY,
-    ACTOR_KEY_URL,
-    db, queues, sockets
-  } = context;
-  const { deliveryQueue, fetchLow, fetchHigh } = queues;
+  const { PRIVATE_KEY, ACTOR_KEY_URL, db, queues, sockets } = context;
+  const { deliveryQueue /* , fetchLow */, fetchHigh } = queues;
 
   const deliverToInbox = async ({ activity }) => {
     // TODO: validate schema?
     // TODO: verify content with source ID/URI
 
     console.log("DELIVERY!", activity);
-    
+
     // Deliver to the database
     try {
       await db.objects.insert({ _id: activity.id, object: activity });
@@ -37,13 +39,13 @@ module.exports = context => {
       sockets.sendToActors(
         coerceArray(activity[propName]),
         sockets.storeDispatch(actions.pushInbox(expandedActivity))
-      )
-    });    
+      );
+    });
   };
 
   const deliverToOutbox = async ({ activity }) => {
     const object = activity.object;
-    
+
     // Deliver to the database
     try {
       await db.objects.insert({ _id: object.id, object });
@@ -52,21 +54,20 @@ module.exports = context => {
       /* no-op */
       // catch error for duplicate keys, maybe accept edits for Update
     }
-    
+
     // Deliver to any connected websockets
     const actor = await fetchJson(fetchHigh, activity.actor);
 
     // Get unique set of destination actor IDs
-    const idSet = new Set();    
+    const idSet = new Set();
     for (let propName of ["actor", "to", "cc", "bto", "bcc"]) {
       coerceArray(activity[propName]).forEach(id => idSet.add(id));
-    }    
-    const ids = Array.from(idSet.values())
-      .filter(id => id !== ID_PUBLIC);
+    }
+    const ids = Array.from(idSet.values()).filter(id => id !== ID_PUBLIC);
 
     // Deliver to any local actors connected via websocket
     sockets.sendToActors(
-      [ ids ],
+      [ids],
       sockets.storeDispatch(actions.pushOutbox({ ...activity, actor }))
     );
 
@@ -78,12 +79,12 @@ module.exports = context => {
 
     // Find all the actors' inboxes
     const inboxes = actors.reduce(
-      (acc, actor) => actor.inbox ? [...acc, actor.inbox] : acc,
+      (acc, actor) => (actor.inbox ? [...acc, actor.inbox] : acc),
       []
     );
 
     const body = JSON.stringify(activity);
-    
+
     const sendToInbox = inbox => {
       const inboxUrl = new URL(inbox);
       const { protocol, host, pathname, search } = inboxUrl;
@@ -110,7 +111,7 @@ module.exports = context => {
           Signature: signature
         }
       };
-      console.log("FETCH", inbox, `${protocol}//${host}${path}`, options); 
+      console.log("FETCH", inbox, `${protocol}//${host}${path}`, options);
       return fetch(`${protocol}//${host}${path}`, options);
     };
 

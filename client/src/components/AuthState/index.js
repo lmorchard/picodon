@@ -17,8 +17,7 @@ export default class AuthState extends React.Component {
     if (isLoggedIn()) {
       return (
         <div className="authState loggedIn">
-          Logged in as: {authUser().displayName}
-          {" "}
+          Logged in as: {authUser().displayName}{" "}
           <button onClick={this.handleLogout}>Logout</button>
         </div>
       );
