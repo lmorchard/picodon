@@ -39,6 +39,7 @@ exports.expandObjects = async (fetch, objects, toDereference = ["actor"]) => {
 
   // 2. Dereference the unique set of IDs
   const fetches = await exports.promiseMap(Object.keys(ids), id =>
+    //exports.fetchJson(fetch, id).then(data => [id, data])
     exports.fetchJson(fetch, id).then(data => [id, data])
   );
 

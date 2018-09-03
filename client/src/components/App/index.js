@@ -1,6 +1,7 @@
 import React from "react";
 import { connect } from "react-redux";
 import { hot } from "react-hot-loader";
+import classNames from "classnames";
 import {
   mapActionsToDispatchProps,
   mapSelectorsToStateProps
@@ -13,36 +14,54 @@ import TooterBox from "../TooterBox";
 import Note from "../Note";
 
 const QueueStats = ({ queueStats }) => (
-  <span className="queueStats">{JSON.stringify(queueStats)}</span>
+  <ul className="queueStats">
+    {Object.entries(queueStats).map(([name, stats], idx) => (
+      <li key={idx}>
+        {stats.isPaused ? "◫" : "►"} {stats.size}/{stats.pending} {name}
+      </li>
+    ))}
+  </ul>
+);
+
+const SocketStatus = ({ socketStatus }) => (
+  <div className={classNames("socketStatus", socketStatus)}>
+    <span className="indicator">&#x23FA;</span> { socketStatus }
+  </div>
 );
 
 export const AppComponent = props => (
-  <div>
-    <AuthState {...props} />
+  <div className="app">
+    <header>
+      <AuthState {...props} />
+      {props.isLoggedIn() && (
+        <React.Fragment>
+          <button onClick={props.refreshServerData}>Refresh data</button>
+          <button onClick={props.setupWebSocket}>Reconnect</button>
+          <SocketStatus socketStatus={props.socketStatus()} />
+          <QueueStats queueStats={props.queueStats()} />
+        </React.Fragment>
+      )}
+    </header>
 
     {props.isLoggedIn() && (
-      <div>
-        <button onClick={props.refreshServerData}>Refresh data</button>
-        <QueueStats queueStats={props.queueStats()} />
-        <div className="tooterface">
-          <div>
-            <h2>Outbox</h2>
-            <TooterBox {...props} />
-            <ul className="outbox notes">
-              {props.outboxActivities().map((activity, idx) => (
-                <Note key={idx} {...activity} />
-              ))}
-            </ul>
-          </div>
+      <div className="tooterface">
+        <div>
+          <h2>Outbox</h2>
+          <TooterBox {...props} />
+          <ul className="outbox notes">
+            {props.outboxActivities().map((activity, idx) => (
+              <Note key={idx} {...activity} />
+            ))}
+          </ul>
+        </div>
 
-          <div>
-            <h2>Inbox</h2>
-            <ul className="inbox notes">
-              {props.inboxActivities().map((activity, idx) => (
-                <Note key={idx} {...activity} />
-              ))}
-            </ul>
-          </div>
+        <div>
+          <h2>Inbox</h2>
+          <ul className="inbox notes">
+            {props.inboxActivities().map((activity, idx) => (
+              <Note key={idx} {...activity} />
+            ))}
+          </ul>
         </div>
       </div>
     )}
