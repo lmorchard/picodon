@@ -74,10 +74,7 @@ export default class TooterBox extends React.Component {
 
     const actor = authUser.actor;
 
-    const content = `
-      <span class="h-card"><a href="https://toot.lmorchard.com/@tester" class="u-url mention">@<span>tester</span></a></span>
-      ${this.state.content}
-    `;
+    const content = `<span class="h-card"><a href="https://toot.lmorchard.com/@tester" class="u-url mention">@<span>tester</span></a></span> ${this.state.content}`;
     this.resetState();
 
     const activity = ActivityCreate({

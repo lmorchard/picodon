@@ -66,6 +66,8 @@ const socketSend = (event, data = {}) => {
   socket.send(JSON.stringify({ ...data, event }));
 };
 
+let reconnectInterval = null;
+
 function setupWebSocket() {
   const {
     setSocketConnecting,
@@ -77,13 +79,26 @@ function setupWebSocket() {
     socketSend("logout");
     socket.close();
   }
+  
+  if (!reconnectInterval) {
+    reconnectInterval = setInterval(() => {
+      if (socket && socket.readyState === WebSocket.CLOSED) {
+        setupWebSocket();
+      }
+    }, 1000);
+  }
 
   const { protocol, host } = window.location;
   const socketUrl = `${protocol === "https:" ? "wss" : "ws"}://${host}/socket`;
+  socket = new WebSocket(socketUrl);
+  /*
   socket = new ReconnectingWebSocket(socketUrl, [], {
     connectionTimeout: 1000,
-    maxRetries: 5
+    minReconnectionDelay: 1000,
+    maxReconnectionDelay: 3000,
+    debug: true
   });
+  */
 
   store.dispatch(setSocketConnecting());
 
@@ -148,7 +163,8 @@ function renderApp() {
       <App
         {...{
           socketSend,
-          refreshServerData
+          refreshServerData,
+          setupWebSocket
         }}
       />
     </Provider>,

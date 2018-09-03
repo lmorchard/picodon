@@ -3,8 +3,11 @@ module.exports = config =>
     (context, name) => require(`./${name}`)(context),
     {
       ...config,
+      fetch: require("node-fetch")
+      /*
       fetch: require("make-fetch-happen").defaults({
         cacheManager: "./.data/fetch-cache"
       })
+      */
     }
   );
