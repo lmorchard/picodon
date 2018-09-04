@@ -30,24 +30,16 @@ export function setupWebSocket(store) {
   const { protocol, host } = window.location;
   const socketUrl = `${protocol === "https:" ? "wss" : "ws"}://${host}/socket`;
   socket = new WebSocket(socketUrl);
-  /* FIXME: this reconnecting socket doesn't seem to... reconnect
-  socket = new ReconnectingWebSocket(socketUrl, [], {
-    connectionTimeout: 1000,
-    minReconnectionDelay: 1000,
-    maxReconnectionDelay: 3000,
-    debug: true
-  });
-  */
 
   store.dispatch(setSocketConnecting());
 
-  socket.addEventListener("open", event => {
-    store.dispatch(setSocketConnected());
-  });
+  socket.addEventListener("open", event =>
+    store.dispatch(setSocketConnected())
+  );
 
-  socket.addEventListener("close", event => {
-    store.dispatch(setSocketDisconnected());
-  });
+  socket.addEventListener("close", event =>
+    store.dispatch(setSocketDisconnected())
+  );
 
   socket.addEventListener("message", event => {
     try {

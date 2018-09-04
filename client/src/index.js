@@ -4,10 +4,9 @@ import { applyMiddleware, createStore } from "redux";
 import { Provider } from "react-redux";
 import promiseMiddleware from "redux-promise";
 import { composeWithDevTools } from "redux-devtools-extension";
-// import ReconnectingWebSocket from "reconnecting-websocket";
-import { fetchJson } from "./lib/utils";
 import { rootReducer, actions, selectors } from "../../lib/store";
 
+import { refreshServerData } from "./data";
 import { setupAuth } from "./auth";
 import { setupWebSocket, socketSend } from "./sockets";
 
@@ -25,37 +24,12 @@ function init() {
 
 function setupStore() {
   const composeEnhancers = composeWithDevTools({});
-
   const initialState = {};
-
   return createStore(
     rootReducer,
     initialState,
     composeEnhancers(applyMiddleware(promiseMiddleware))
   );
-}
-
-// TODO: switch over to websockets for this?
-function refreshServerData(store) {
-  const state = store.getState();
-  if (!selectors.isLoggedIn(state)) {
-    return;
-  }
-
-  const user = selectors.authUser(state);
-  const actor = user.actor;
-
-  Promise.all([
-    fetchJson(actor.inbox + "?expand=1"),
-    fetchJson(actor.outbox + "?expand=1")
-  ])
-    .then(([inboxData, outboxData, queueStatsData]) => {
-      store.dispatch(actions.updateInbox(inboxData));
-      store.dispatch(actions.updateOutbox(outboxData));
-    })
-    .catch(err => {
-      console.log("DATA FETCH FAILURE", err);
-    });
 }
 
 function renderApp(store) {

@@ -1,6 +1,5 @@
-- Add UI to Create a Note with client-to-server
-- Websockets for live incoming updates?
 - Follow / unfollow
 - Dashboard
-- HTTP fetch promise queue with stats
 - Mastodon client API support sufficient for Pinafore
+- Get fetch-with-caching working quickly (make-fetch-happen seems slow)
+- More queue controls? pause?

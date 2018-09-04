@@ -2,6 +2,8 @@ import React from "react";
 
 import "./index.less";
 
+import { coerceArray } from "../../../../lib/utils";
+
 import {
   ID_PUBLIC,
   dateNow,
@@ -74,9 +76,8 @@ export default class TooterBox extends React.Component {
 
     const actor = authUser.actor;
 
-    const content = `<span class="h-card"><a href="https://toot.lmorchard.com/@tester" class="u-url mention">@<span>tester</span></a></span> ${
-      this.state.content
-    }`;
+    // const content = `<span class="h-card"><a href="https://toot.lmorchard.com/@tester" class="u-url mention">@<span>tester</span></a></span> ${this.state.content}`;
+    const content = this.state.content;
     this.resetState();
 
     const activity = ActivityCreate({
@@ -87,13 +88,25 @@ export default class TooterBox extends React.Component {
       })
     });
 
+    const tags = (activity.object.tag = []);
+
+    const mentions = [];
+
     if (this.state.to) {
       activity.to = activity.object.to = this.state.to.split(/[,;] ?/);
+      coerceArray(activity.to)
+        .filter(id => id !== ID_PUBLIC)
+        .forEach(id => mentions.push(id));
     }
 
     if (this.state.cc) {
       activity.cc = activity.object.cc = this.state.cc.split(/[,;] ?/);
+      coerceArray(activity.cc)
+        .filter(id => id !== ID_PUBLIC)
+        .forEach(id => mentions.push(id));
     }
+
+    mentions.forEach(id => tags.push({ type: "Mention", href: id }));
 
     console.log("ACTIVITY", activity);
 
