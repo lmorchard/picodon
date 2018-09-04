@@ -1,5 +1,5 @@
 const { URL } = require("url");
-// const PQueue = require("p-queue");
+const fetch = require("node-fetch");
 const {
   fetchJson,
   expandObjects,
@@ -7,10 +7,9 @@ const {
   coerceArray,
   promiseMap
 } = require("./lib/utils");
+const { signRequest } = require("./lib/crypto");
 const { actions } = require("../lib/store");
 const { ID_PUBLIC } = require("../lib/stamps");
-const { signRequest } = require("./lib/crypto");
-const fetch = require("node-fetch");
 
 module.exports = context => {
   const { PRIVATE_KEY, ACTOR_KEY_URL, db, queues, sockets } = context;
@@ -20,7 +19,7 @@ module.exports = context => {
     // TODO: validate schema?
     // TODO: verify content with source ID/URI
 
-    console.log("DELIVERY!", activity);
+    console.log("DELIVERY!", JSON.stringify(activity, null, " "));
 
     // Deliver to the database
     try {
@@ -88,13 +87,14 @@ module.exports = context => {
     const sendToInbox = inbox => {
       const inboxUrl = new URL(inbox);
       const { protocol, host, pathname, search } = inboxUrl;
+
       const path = pathname + search;
-      console.log("INBOX", inbox, protocol, host, path);
       const method = "POST";
       const headers = {
         Host: host,
         Date: new Date().toUTCString()
       };
+
       const signature = signRequest({
         // TODO: look these up somehow, rather than hardcode
         keyId: ACTOR_KEY_URL,
@@ -103,6 +103,7 @@ module.exports = context => {
         path,
         headers
       });
+
       const options = {
         method,
         body,
@@ -111,7 +112,10 @@ module.exports = context => {
           Signature: signature
         }
       };
+
+      console.log("INBOX", inbox, protocol, host, path);
       console.log("FETCH", inbox, `${protocol}//${host}${path}`, options);
+
       return fetch(`${protocol}//${host}${path}`, options);
     };
 
