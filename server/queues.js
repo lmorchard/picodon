@@ -28,16 +28,21 @@ module.exports = context => {
     isPaused: queue.isPaused
   });
 
+  let currentStats = null;
   setInterval(() => {
-    sockets.broadcastToAuthed(
-      sockets.storeDispatch(
-        actions.updateQueueStats({
-          fetch: queueStats(fetchQueue),
-          delivery: queueStats(deliveryQueue)
-        })
-      )
-    );
-  }, 500);
+    const previousStats = currentStats;
+    currentStats = {
+      fetch: queueStats(fetchQueue),
+      delivery: queueStats(deliveryQueue)
+    };
+    if (JSON.stringify(currentStats) !== JSON.stringify(previousStats)) {
+      sockets.broadcastToAuthed(
+        sockets.storeDispatch(
+          actions.updateQueueStats(currentStats)
+        )
+      );
+    }
+  }, 250);
 
   return { ...context, queues };
 };

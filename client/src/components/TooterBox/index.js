@@ -18,6 +18,7 @@ export default class TooterBox extends React.Component {
   }
 
   defaultState = () => ({
+    submitting: false,
     to: ID_PUBLIC,
     cc: "",
     content: ""
@@ -47,7 +48,11 @@ export default class TooterBox extends React.Component {
             value={this.state.cc}
             onChange={this.handleCcChange}
           />
-          <input type="submit" value="Toot!" />
+          <input
+            type="submit"
+            value={this.state.submitting ? "Tooting..." : "Toot!"}
+            disabled={this.state.submitting}
+          />
         </form>
       </div>
     );
@@ -68,6 +73,7 @@ export default class TooterBox extends React.Component {
 
   handleSubmit = ev => {
     ev.preventDefault();
+    this.setState({ submitting: true });
 
     const authUser = this.props.authUser();
     if (!authUser) {
@@ -76,7 +82,6 @@ export default class TooterBox extends React.Component {
 
     const actor = authUser.actor;
 
-    // const content = `<span class="h-card"><a href="https://toot.lmorchard.com/@tester" class="u-url mention">@<span>tester</span></a></span> ${this.state.content}`;
     const content = this.state.content;
     this.resetState();
 
@@ -108,19 +113,18 @@ export default class TooterBox extends React.Component {
 
     mentions.forEach(id => tags.push({ type: "Mention", href: id }));
 
-    console.log("ACTIVITY", activity);
-
-    const outboxUrl = actor.outbox;
-    fetch(outboxUrl, {
+    fetch(actor.outbox, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(activity)
     })
       .then(res => Promise.all([res.status, res.json()]))
       .then(([status, data]) => {
+        this.setState({ submitting: false });
         console.log("TOOT SUBMITTED!", status);
       })
       .catch(err => {
+        this.setState({ submitting: false });
         console.log("TOOT FAILURE!");
       });
   };
