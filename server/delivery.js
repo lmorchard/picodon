@@ -63,7 +63,7 @@ module.exports = context => {
 
     // Deliver to any local actors connected via websocket
     sockets.sendToActors(
-      [ids],
+      ids,
       sockets.storeDispatch(actions.pushOutbox({ ...activity, actor }))
     );
 
