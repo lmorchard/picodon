@@ -60,10 +60,11 @@ module.exports = context => {
       coerceArray(activity[propName]).forEach(id => idSet.add(id));
     }
     const ids = Array.from(idSet.values()).filter(id => id !== ID_PUBLIC);
+    console.log("OUTBOX LOCAL IDS", ids);
 
     // Deliver to any local actors connected via websocket
     sockets.sendToActors(
-      [ids],
+      ids,
       sockets.storeDispatch(actions.pushOutbox({ ...activity, actor }))
     );
 
