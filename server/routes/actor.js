@@ -54,7 +54,6 @@ module.exports = context => {
       const result = await db.objects.findOne({
         _id: ObjectUrl({ baseURL: ACTOR_URL, uuid })
       });
-      console.log("RESULT", result);
       res.json(result.object);
     } catch (e) {
       res.status(404).send({ status: "NOT FOUND" });
@@ -90,20 +89,14 @@ module.exports = context => {
         const incoming = req.body;
 
         // TODO: some schema validation here
-
         let object, activity;
-
-        const objectId = ObjectUrl({ baseURL: ACTOR_URL, uuid: UUID() });
-        const activityId = ObjectUrl({ baseURL: ACTOR_URL, uuid: UUID() });
 
         if (isActivity(incoming)) {
           activity = incoming;
-          activity.id = activityId;
-          activity.actor = ACTOR_URL;
-          activity.published = dateNow();
           object = activity.object;
-          object.id = objectId;
         } else {
+          // Assume the incoming is a bare object,
+          // wrap it in a Create activity
           object = incoming;
           object.id = objectId;
           activity = ActivityCreate({
@@ -117,6 +110,15 @@ module.exports = context => {
             published: dateNow(),
             object
           });
+        }
+
+        // Enforce some server-generated properties.
+        const activityId = ObjectUrl({ baseURL: ACTOR_URL, uuid: UUID() });
+        const objectId = ObjectUrl({ baseURL: ACTOR_URL, uuid: UUID() });
+        activity.id = activityId;
+        activity.actor = ACTOR_URL;
+        if (activity.type === "Create") {       
+          object.id = objectId;
         }
 
         delivery.toOutbox({ activity });
@@ -166,6 +168,7 @@ module.exports = context => {
         }
 
         const activity = body;
+        console.log("INBOX ACTIVITY", body);
         delivery.toInbox({ activity });
 
         return response.status(202).json({});

@@ -50,37 +50,45 @@ module.exports = context => {
       /* no-op */
       // catch error for duplicate keys, maybe accept edits for Update
     }
+    
+    if (activity.type === "Create") {
+      // Deliver to any connected websockets
+      const actor = await fetchJson(fetchHigh, activity.actor);
 
-    // Deliver to any connected websockets
-    const actor = await fetchJson(fetchHigh, activity.actor);
+      // Get unique set of destination actor IDs
+      const idSet = new Set();
+      for (let propName of ["actor", "to", "cc", "bto", "bcc"]) {
+        coerceArray(activity[propName]).forEach(id => idSet.add(id));
+      }
+      const ids = Array.from(idSet.values()).filter(id => id !== ID_PUBLIC);
 
-    // Get unique set of destination actor IDs
-    const idSet = new Set();
-    for (let propName of ["actor", "to", "cc", "bto", "bcc"]) {
-      coerceArray(activity[propName]).forEach(id => idSet.add(id));
+      // Deliver to any local actors connected via websocket
+      sockets.sendToActors(
+        ids,
+        sockets.storeDispatch(actions.pushOutbox({ ...activity, actor }))
+      );
+
+      // Dereference all the remote actors.
+      const actors = await promiseMap(
+        ids.filter(id => id !== activity.actor),
+        id => dereferenceId(fetchHigh, id)
+      );
+
+      // Find all the actors' inboxes
+      const inboxes = actors.reduce(
+        (acc, actor) => (actor.inbox ? [...acc, actor.inbox] : acc),
+        []
+      );
+
+      const body = JSON.stringify(activity);
+      inboxes.forEach(inbox => delivery.sendToRemoteInbox(inbox, body));
     }
-    const ids = Array.from(idSet.values()).filter(id => id !== ID_PUBLIC);
 
-    // Deliver to any local actors connected via websocket
-    sockets.sendToActors(
-      ids,
-      sockets.storeDispatch(actions.pushOutbox({ ...activity, actor }))
-    );
-
-    // Dereference all the remote actors.
-    const actors = await promiseMap(
-      ids /* .filter(id => id !== activity.actor) */,
-      id => dereferenceId(fetchHigh, id)
-    );
-
-    // Find all the actors' inboxes
-    const inboxes = actors.reduce(
-      (acc, actor) => (actor.inbox ? [...acc, actor.inbox] : acc),
-      []
-    );
-
-    const body = JSON.stringify(activity);
-    inboxes.forEach(inbox => delivery.sendToRemoteInbox(inbox, body));
+    if (activity.type === "Follow") {
+      const objectActor = await fetchJson(fetchHigh, activity.object);
+      const body = JSON.stringify(activity);
+      delivery.sendToRemoteInbox(objectActor.inbox, body);
+    }
   };
 
   async function sendToRemoteInbox(inbox, body) {
@@ -112,7 +120,9 @@ module.exports = context => {
       }
     };
 
-    return fetch(`${protocol}//${host}${path}`, options);
+    const result = await fetch(`${protocol}//${host}${path}`, options);
+    console.log("SEND TO REMOTE", result.status, inbox, options);
+    return;
   }
   
   const delivery = {
